@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- OFF-PEAK profile: light demand all round, few pedestrians. The junction
+     flows freely, so both controllers do well and the gap is small (an honest
+     "adaptive control doesn't hurt when there's no congestion" data point, and
+     temporal contrast for the analyst). Total ~1240 veh/h. -->
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5.0"
+           minGap="2.5" maxSpeed="13.89" guiShape="passenger"/>
+    <vType id="ped" vClass="pedestrian"/>
+
+    <!-- East-West arterial (light): through 300/h, turns 60/h each -->
+    <flow id="W_E" type="car" begin="0" end="3600" from="W_in" to="E_out" vehsPerHour="300" departLane="best" departSpeed="max"/>
+    <flow id="W_N" type="car" begin="0" end="3600" from="W_in" to="N_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+    <flow id="W_S" type="car" begin="0" end="3600" from="W_in" to="S_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+    <flow id="E_W" type="car" begin="0" end="3600" from="E_in" to="W_out" vehsPerHour="300" departLane="best" departSpeed="max"/>
+    <flow id="E_N" type="car" begin="0" end="3600" from="E_in" to="N_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+    <flow id="E_S" type="car" begin="0" end="3600" from="E_in" to="S_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+
+    <!-- North-South side street (very light): through 120/h, turns 40/h each -->
+    <flow id="N_S" type="car" begin="0" end="3600" from="N_in" to="S_out" vehsPerHour="120" departLane="best" departSpeed="max"/>
+    <flow id="N_E" type="car" begin="0" end="3600" from="N_in" to="E_out" vehsPerHour="40" departLane="best" departSpeed="max"/>
+    <flow id="N_W" type="car" begin="0" end="3600" from="N_in" to="W_out" vehsPerHour="40" departLane="best" departSpeed="max"/>
+    <flow id="S_N" type="car" begin="0" end="3600" from="S_in" to="N_out" vehsPerHour="120" departLane="best" departSpeed="max"/>
+    <flow id="S_E" type="car" begin="0" end="3600" from="S_in" to="E_out" vehsPerHour="40" departLane="best" departSpeed="max"/>
+    <flow id="S_W" type="car" begin="0" end="3600" from="S_in" to="W_out" vehsPerHour="40" departLane="best" departSpeed="max"/>
+
+    <!-- Pedestrians: sparse -->
+    <personFlow id="p_WN" type="ped" begin="0" end="3600" perHour="15"><walk from="W_in" to="N_out"/></personFlow>
+    <personFlow id="p_ES" type="ped" begin="0" end="3600" perHour="15"><walk from="E_in" to="S_out"/></personFlow>
+    <personFlow id="p_NE" type="ped" begin="0" end="3600" perHour="15"><walk from="N_in" to="E_out"/></personFlow>
+    <personFlow id="p_SW" type="ped" begin="0" end="3600" perHour="15"><walk from="S_in" to="W_out"/></personFlow>
+</routes>

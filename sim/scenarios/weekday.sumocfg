@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WEEKDAY scenario: directional commute peak on the E-W arterial. -->
+<configuration>
+    <input>
+        <net-file value="../networks/intersection.net.xml"/>
+        <route-files value="../routes/weekday.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+    </time>
+    <processing>
+        <time-to-teleport value="-1"/>
+    </processing>
+</configuration>

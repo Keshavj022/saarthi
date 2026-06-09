@@ -34,3 +34,19 @@ def test_summarize_tripinfo_empty(tmp_path):
     summary = summarize_tripinfo(p)
     assert summary["num_vehicles"] == 0
     assert summary["avg_wait_s"] == 0.0
+    assert summary["num_pedestrians"] == 0
+
+
+def test_summarize_tripinfo_with_pedestrians(tmp_path):
+    p = tmp_path / "trip_ped.xml"
+    p.write_text(
+        '<tripinfos>'
+        '  <tripinfo id="v0" waitingTime="10" duration="100"/>'
+        '  <personinfo id="p0" timeLoss="20"/>'
+        '  <personinfo id="p1" timeLoss="40"/>'
+        '</tripinfos>'
+    )
+    summary = summarize_tripinfo(p)
+    assert summary["num_vehicles"] == 1
+    assert summary["num_pedestrians"] == 2
+    assert summary["avg_ped_delay_s"] == 30.0

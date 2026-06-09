@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RUSH-HOUR profile: a busy E-W ARTERIAL crossing a lighter N-S side street,
+     plus moderate pedestrian crossing demand. The asymmetry (arterial >> side
+     street) is what an adaptive controller exploits; a fixed 30/30 split wastes
+     green on the light approach. Pedestrian demand is moderate so crossings
+     genuinely empty out between groups (the walk phase can be skipped). -->
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5.0"
+           minGap="2.5" maxSpeed="13.89" guiShape="passenger"/>
+    <vType id="ped" vClass="pedestrian"/>
+
+    <!-- East-West arterial (heavy): through 650/h, turns 120/h each -->
+    <flow id="W_E" type="car" begin="0" end="3600" from="W_in" to="E_out" vehsPerHour="650" departLane="best" departSpeed="max"/>
+    <flow id="W_N" type="car" begin="0" end="3600" from="W_in" to="N_out" vehsPerHour="120" departLane="best" departSpeed="max"/>
+    <flow id="W_S" type="car" begin="0" end="3600" from="W_in" to="S_out" vehsPerHour="120" departLane="best" departSpeed="max"/>
+    <flow id="E_W" type="car" begin="0" end="3600" from="E_in" to="W_out" vehsPerHour="650" departLane="best" departSpeed="max"/>
+    <flow id="E_N" type="car" begin="0" end="3600" from="E_in" to="N_out" vehsPerHour="120" departLane="best" departSpeed="max"/>
+    <flow id="E_S" type="car" begin="0" end="3600" from="E_in" to="S_out" vehsPerHour="120" departLane="best" departSpeed="max"/>
+
+    <!-- North-South side street (light): through 220/h, turns 70/h each -->
+    <flow id="N_S" type="car" begin="0" end="3600" from="N_in" to="S_out" vehsPerHour="220" departLane="best" departSpeed="max"/>
+    <flow id="N_E" type="car" begin="0" end="3600" from="N_in" to="E_out" vehsPerHour="70" departLane="best" departSpeed="max"/>
+    <flow id="N_W" type="car" begin="0" end="3600" from="N_in" to="W_out" vehsPerHour="70" departLane="best" departSpeed="max"/>
+    <flow id="S_N" type="car" begin="0" end="3600" from="S_in" to="N_out" vehsPerHour="220" departLane="best" departSpeed="max"/>
+    <flow id="S_E" type="car" begin="0" end="3600" from="S_in" to="E_out" vehsPerHour="70" departLane="best" departSpeed="max"/>
+    <flow id="S_W" type="car" begin="0" end="3600" from="S_in" to="W_out" vehsPerHour="70" departLane="best" departSpeed="max"/>
+
+    <!-- Pedestrians: moderate, walk between arms and cross at the crossings -->
+    <personFlow id="p_WN" type="ped" begin="0" end="3600" perHour="30"><walk from="W_in" to="N_out"/></personFlow>
+    <personFlow id="p_WS" type="ped" begin="0" end="3600" perHour="30"><walk from="W_in" to="S_out"/></personFlow>
+    <personFlow id="p_EN" type="ped" begin="0" end="3600" perHour="30"><walk from="E_in" to="N_out"/></personFlow>
+    <personFlow id="p_ES" type="ped" begin="0" end="3600" perHour="30"><walk from="E_in" to="S_out"/></personFlow>
+    <personFlow id="p_NE" type="ped" begin="0" end="3600" perHour="30"><walk from="N_in" to="E_out"/></personFlow>
+    <personFlow id="p_NW" type="ped" begin="0" end="3600" perHour="30"><walk from="N_in" to="W_out"/></personFlow>
+    <personFlow id="p_SE" type="ped" begin="0" end="3600" perHour="30"><walk from="S_in" to="E_out"/></personFlow>
+    <personFlow id="p_SW" type="ped" begin="0" end="3600" perHour="30"><walk from="S_in" to="W_out"/></personFlow>
+</routes>

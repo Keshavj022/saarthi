@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WEEKEND scenario: balanced flow, heavy pedestrian activity. -->
+<configuration>
+    <input>
+        <net-file value="../networks/intersection.net.xml"/>
+        <route-files value="../routes/weekend.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+    </time>
+    <processing>
+        <time-to-teleport value="-1"/>
+    </processing>
+</configuration>

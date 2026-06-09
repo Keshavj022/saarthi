@@ -80,6 +80,13 @@ def build_network(force: bool = False) -> Path:
         "--output-file", str(NET_FILE),
         "--tls.default-type", "static",   # fixed-time program (the baseline)
         "--no-turnarounds", "true",
+        # Pedestrian infrastructure: sidewalks on every arm + signalized
+        # crossings across each arm (4 walking areas + 4 crossings at junction C).
+        # The controllers synthesize their own NS/EW/PED phases at runtime, so we
+        # don't rely on netconvert's default (concurrent-crossing) TLS program.
+        "--sidewalks.guess", "true",
+        "--crossings.guess", "true",
+        "--walkingareas", "true",
     ]
     log.info("Building SUMO network -> %s", NET_FILE)
     subprocess.run(cmd, check=True)

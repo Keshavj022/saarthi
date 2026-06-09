@@ -15,6 +15,10 @@ venv/
 data/app.db
 data/outputs/*
 !data/outputs/.gitkeep
+# Keep the headline benchmark artifacts in the repo (reproducible via
+# scripts/run_benchmark.py, but committed so the result is always visible).
+!data/outputs/benchmark.png
+!data/outputs/benchmark.json
 data/videos/*
 !data/videos/.gitkeep
 

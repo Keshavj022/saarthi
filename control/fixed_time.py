@@ -1,35 +1,32 @@
 """Fixed-time baseline controller — the "before" in the before/after benchmark.
 
-It does not make decisions: it ensures the junction runs SUMO's built-in static
-(fixed-cycle) signal program and lets SUMO advance it at its preset green/yellow
-durations. The adaptive controllers (Phase 1+) must beat this.
+It cycles NS → EW → PED at fixed green durations, **ignoring demand** — including
+serving the pedestrian phase every cycle whether or not anyone is waiting. This
+is the classic dumb fixed plan the adaptive controller must beat, and it lets the
+benchmark compare the *policy* against an identical phase set.
 """
 from __future__ import annotations
 
 import logging
 
-from control.base import Controller
+from control.phases import PhasedController
 
 log = logging.getLogger(__name__)
 
-# Default program id that netconvert assigns to a generated static TLS program.
-DEFAULT_PROGRAM = "0"
 
-
-class FixedTimeController(Controller):
-    """Runs the junction's preset fixed-time program; never overrides phases."""
+class FixedTimeController(PhasedController):
+    """Demand-blind fixed cycle over the shared NS/EW/PED phases."""
 
     name = "fixed_time"
 
-    def reset(self) -> None:
-        import traci  # lazy: only available during a live run
+    #: Fixed green durations (seconds) per phase, applied in `order`.
+    durations = {"NS": 30.0, "EW": 30.0, "PED": 13.0}
+    order = ("NS", "EW", "PED")
 
-        try:
-            traci.trafficlight.setProgram(self.tls_id, DEFAULT_PROGRAM)
-        except traci.TraCIException:  # already on the default program
-            log.debug("Could not set program %s on %s; using current program.",
-                      DEFAULT_PROGRAM, self.tls_id)
-
-    def step(self, sim_time: float) -> None:
-        # Intentional no-op: SUMO drives the fixed-time program by itself.
-        return
+    def select_phase(self, sim_time: float) -> str:
+        # Stay in the current phase until its fixed green has elapsed, then
+        # advance to the next phase in the cycle — regardless of demand.
+        if sim_time - self._phase_start < self.durations[self.current]:
+            return self.current
+        i = self.order.index(self.current)
+        return self.order[(i + 1) % len(self.order)]

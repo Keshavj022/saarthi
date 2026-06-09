@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WEEKDAY (commute) profile: a directional E-W arterial peak — heavier inbound
+     (W->E) than outbound (E->W) — over a moderate side street. The directional
+     imbalance plus the arterial/side-street split is something adaptive control
+     exploits. Moderate pedestrians. Total ~1900 veh/h. -->
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5.0"
+           minGap="2.5" maxSpeed="13.89" guiShape="passenger"/>
+    <vType id="ped" vClass="pedestrian"/>
+
+    <!-- East-West arterial, directional: inbound W->E heavy (550), outbound lighter (350) -->
+    <flow id="W_E" type="car" begin="0" end="3600" from="W_in" to="E_out" vehsPerHour="550" departLane="best" departSpeed="max"/>
+    <flow id="W_N" type="car" begin="0" end="3600" from="W_in" to="N_out" vehsPerHour="100" departLane="best" departSpeed="max"/>
+    <flow id="W_S" type="car" begin="0" end="3600" from="W_in" to="S_out" vehsPerHour="100" departLane="best" departSpeed="max"/>
+    <flow id="E_W" type="car" begin="0" end="3600" from="E_in" to="W_out" vehsPerHour="350" departLane="best" departSpeed="max"/>
+    <flow id="E_N" type="car" begin="0" end="3600" from="E_in" to="N_out" vehsPerHour="100" departLane="best" departSpeed="max"/>
+    <flow id="E_S" type="car" begin="0" end="3600" from="E_in" to="S_out" vehsPerHour="100" departLane="best" departSpeed="max"/>
+
+    <!-- North-South side street (moderate): through 180/h, turns 60/h each -->
+    <flow id="N_S" type="car" begin="0" end="3600" from="N_in" to="S_out" vehsPerHour="180" departLane="best" departSpeed="max"/>
+    <flow id="N_E" type="car" begin="0" end="3600" from="N_in" to="E_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+    <flow id="N_W" type="car" begin="0" end="3600" from="N_in" to="W_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+    <flow id="S_N" type="car" begin="0" end="3600" from="S_in" to="N_out" vehsPerHour="180" departLane="best" departSpeed="max"/>
+    <flow id="S_E" type="car" begin="0" end="3600" from="S_in" to="E_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+    <flow id="S_W" type="car" begin="0" end="3600" from="S_in" to="W_out" vehsPerHour="60" departLane="best" departSpeed="max"/>
+
+    <!-- Pedestrians: moderate -->
+    <personFlow id="p_WN" type="ped" begin="0" end="3600" perHour="25"><walk from="W_in" to="N_out"/></personFlow>
+    <personFlow id="p_WS" type="ped" begin="0" end="3600" perHour="25"><walk from="W_in" to="S_out"/></personFlow>
+    <personFlow id="p_EN" type="ped" begin="0" end="3600" perHour="25"><walk from="E_in" to="N_out"/></personFlow>
+    <personFlow id="p_ES" type="ped" begin="0" end="3600" perHour="25"><walk from="E_in" to="S_out"/></personFlow>
+    <personFlow id="p_NE" type="ped" begin="0" end="3600" perHour="25"><walk from="N_in" to="E_out"/></personFlow>
+    <personFlow id="p_SW" type="ped" begin="0" end="3600" perHour="25"><walk from="S_in" to="W_out"/></personFlow>
+</routes>

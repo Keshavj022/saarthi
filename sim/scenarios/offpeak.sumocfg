@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- OFF-PEAK scenario: light traffic, sparse pedestrians. -->
+<configuration>
+    <input>
+        <net-file value="../networks/intersection.net.xml"/>
+        <route-files value="../routes/offpeak.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+    </time>
+    <processing>
+        <time-to-teleport value="-1"/>
+    </processing>
+</configuration>

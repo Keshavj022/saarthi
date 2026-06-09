@@ -1,0 +1,29 @@
+{
+  "scenario": "weekday",
+  "fixed_time": {
+    "scenario": "weekday",
+    "controller": "fixed_time",
+    "avg_wait_s": 102.2,
+    "avg_queue": 44.74,
+    "peak_queue": 85,
+    "num_vehicles": 1901,
+    "avg_travel_time_s": 160.83,
+    "sim_steps": 4287,
+    "num_pedestrians": 150,
+    "avg_ped_delay_s": 48.97
+  },
+  "max_pressure": {
+    "scenario": "weekday",
+    "controller": "max_pressure",
+    "avg_wait_s": 17.62,
+    "avg_queue": 8.37,
+    "peak_queue": 28,
+    "num_vehicles": 1901,
+    "avg_travel_time_s": 58.26,
+    "sim_steps": 3825,
+    "num_pedestrians": 150,
+    "avg_ped_delay_s": 35.05
+  },
+  "wait_reduction_pct": 82.8,
+  "ped_delay_reduction_pct": 28.4
+}

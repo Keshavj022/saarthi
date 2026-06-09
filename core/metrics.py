@@ -38,6 +38,8 @@ class SimMetrics:
     num_vehicles: int
     avg_travel_time_s: float
     sim_steps: int
+    num_pedestrians: int = 0
+    avg_ped_delay_s: float = 0.0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -59,7 +61,9 @@ def aggregate_queue(samples: list[int]) -> tuple[float, int]:
 def summarize_tripinfo(path: str | Path) -> dict:
     """Parse a SUMO tripinfo XML and average over completed trips.
 
-    Returns {num_vehicles, avg_wait_s, avg_travel_time_s}.
+    Returns vehicle metrics (num_vehicles, avg_wait_s, avg_travel_time_s) and
+    pedestrian metrics (num_pedestrians, avg_ped_delay_s) where pedestrian delay
+    is SUMO `timeLoss` — time lost vs free-flow walking, i.e. crossing waits.
     """
     root = ET.parse(str(path)).getroot()
     waits: list[float] = []
@@ -67,11 +71,17 @@ def summarize_tripinfo(path: str | Path) -> dict:
     for trip in root.findall("tripinfo"):
         waits.append(float(trip.get("waitingTime", 0.0)))
         durations.append(float(trip.get("duration", 0.0)))
+    ped_delays: list[float] = [
+        float(p.get("timeLoss", 0.0)) for p in root.findall("personinfo")
+    ]
     n = len(waits)
+    npd = len(ped_delays)
     return {
         "num_vehicles": n,
         "avg_wait_s": (sum(waits) / n) if n else 0.0,
         "avg_travel_time_s": (sum(durations) / n) if n else 0.0,
+        "num_pedestrians": npd,
+        "avg_ped_delay_s": (sum(ped_delays) / npd) if npd else 0.0,
     }
 
 
@@ -135,6 +145,8 @@ def run_scenario(
         num_vehicles=int(trip["num_vehicles"]),
         avg_travel_time_s=round(trip["avg_travel_time_s"], 2),
         sim_steps=step,
+        num_pedestrians=int(trip["num_pedestrians"]),
+        avg_ped_delay_s=round(trip["avg_ped_delay_s"], 2),
     )
     log.info("Run complete: %s", metrics.to_dict())
     return metrics
