@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Baseline (moderate, balanced) demand for the single junction.
+     12 flows = 4 approaches x {through, left, right}. SUMO routes each flow
+     through the junction automatically from `from`/`to` edges.
+     Through = 500 veh/h, each turn = 150 veh/h  ->  ~800 veh/h per approach. -->
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5.0"
+           minGap="2.5" maxSpeed="13.89" guiShape="passenger"/>
+
+    <!-- West approach (W_in): through->E, turns->N / S -->
+    <flow id="W_E" type="car" begin="0" end="3600" from="W_in" to="E_out" vehsPerHour="500" departLane="best" departSpeed="max"/>
+    <flow id="W_N" type="car" begin="0" end="3600" from="W_in" to="N_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+    <flow id="W_S" type="car" begin="0" end="3600" from="W_in" to="S_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+
+    <!-- East approach (E_in): through->W, turns->N / S -->
+    <flow id="E_W" type="car" begin="0" end="3600" from="E_in" to="W_out" vehsPerHour="500" departLane="best" departSpeed="max"/>
+    <flow id="E_N" type="car" begin="0" end="3600" from="E_in" to="N_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+    <flow id="E_S" type="car" begin="0" end="3600" from="E_in" to="S_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+
+    <!-- North approach (N_in): through->S, turns->E / W -->
+    <flow id="N_S" type="car" begin="0" end="3600" from="N_in" to="S_out" vehsPerHour="500" departLane="best" departSpeed="max"/>
+    <flow id="N_E" type="car" begin="0" end="3600" from="N_in" to="E_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+    <flow id="N_W" type="car" begin="0" end="3600" from="N_in" to="W_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+
+    <!-- South approach (S_in): through->N, turns->E / W -->
+    <flow id="S_N" type="car" begin="0" end="3600" from="S_in" to="N_out" vehsPerHour="500" departLane="best" departSpeed="max"/>
+    <flow id="S_E" type="car" begin="0" end="3600" from="S_in" to="E_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+    <flow id="S_W" type="car" begin="0" end="3600" from="S_in" to="W_out" vehsPerHour="150" departLane="best" departSpeed="max"/>
+</routes>

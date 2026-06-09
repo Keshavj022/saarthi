@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Edges for the 4-way junction. Each arm has a 2-lane approach (*_in) and a
+     2-lane exit (*_out). Speed 13.89 m/s = 50 km/h. netconvert generates the
+     connections and the (static / fixed-time) traffic-light program. -->
+<edges>
+    <edge id="N_in"  from="N" to="C" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="N_out" from="C" to="N" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="S_in"  from="S" to="C" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="S_out" from="C" to="S" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="E_in"  from="E" to="C" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="E_out" from="C" to="E" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="W_in"  from="W" to="C" numLanes="2" speed="13.89" priority="2"/>
+    <edge id="W_out" from="C" to="W" numLanes="2" speed="13.89" priority="2"/>
+</edges>

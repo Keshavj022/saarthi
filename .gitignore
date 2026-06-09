@@ -1,0 +1,37 @@
+# ---- Secrets / environment ----
+.env
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# ---- Data / generated artifacts ----
+data/app.db
+data/outputs/*
+!data/outputs/.gitkeep
+data/videos/*
+!data/videos/.gitkeep
+
+# ---- SUMO run artifacts (generated; the .net.xml is built from inputs) ----
+*.tripinfo.xml
+*.summary.xml
+*.queue.xml
+sumo.log
+*.tmp
+
+# ---- Model weights (perception, Phase 3+) ----
+*.pt
+*.pth
+*.onnx
+
+# ---- Tooling runtime state ----
+.claude-flow/
+
+# ---- OS ----
+.DS_Store

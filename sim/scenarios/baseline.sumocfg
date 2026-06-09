@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Baseline scenario: single junction + moderate demand.
+     Paths are relative to this file (sim/scenarios/). Run-time options
+     (step length, seed, tripinfo output) are supplied by the loader/runner. -->
+<configuration>
+    <input>
+        <net-file value="../networks/intersection.net.xml"/>
+        <route-files value="../routes/baseline.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+    </time>
+    <processing>
+        <!-- Disable teleporting so genuine congestion shows up as waiting time
+             instead of being magically resolved. The runner caps total steps to
+             avoid an infinite hang in the unlikely event of a hard gridlock. -->
+        <time-to-teleport value="-1"/>
+    </processing>
+</configuration>
