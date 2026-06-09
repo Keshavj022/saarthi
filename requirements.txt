@@ -7,6 +7,13 @@
 # Dependencies are grouped by phase. Uncomment a section when you reach that
 # phase so early installs stay light (perception/RL pull in heavy ML libs).
 
+# ---- SUMO simulator ----
+# Prebuilt SUMO (binaries + traci/sumolib + tools) via the official wheel — no
+# system build needed. The code auto-discovers SUMO_HOME from this package, so
+# no shell setup is required. If you instead have a SYSTEM SUMO install, export
+# SUMO_HOME and it takes precedence over this wheel.
+eclipse-sumo>=1.27
+
 # ---- Core (Phases 0–1): config, data, plotting, validation ----
 pydantic>=2.7
 pydantic-settings>=2.3

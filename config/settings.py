@@ -80,8 +80,24 @@ class Settings(BaseSettings):
         return self.data_dir / "app.db"
 
     def resolved_sumo_home(self) -> str | None:
-        """SUMO_HOME from .env if set, else from the process environment."""
-        return self.sumo_home or os.environ.get("SUMO_HOME")
+        """Resolve SUMO_HOME, in priority order:
+
+        1. `SUMO_HOME` from `.env`,
+        2. `SUMO_HOME` from the process environment (a system SUMO install),
+        3. the bundled location of the `eclipse-sumo` pip wheel, if installed.
+
+        This lets a real system install take precedence while still working
+        out-of-the-box when SUMO came from the wheel (no shell setup needed).
+        """
+        explicit = self.sumo_home or os.environ.get("SUMO_HOME")
+        if explicit:
+            return explicit
+        try:
+            import sumo  # provided by the `eclipse-sumo` wheel
+
+            return sumo.SUMO_HOME
+        except Exception:
+            return None
 
     def ensure_dirs(self) -> None:
         """Create the runtime output directories if they don't exist."""
