@@ -30,10 +30,10 @@ langgraph>=0.2.0
 langchain-core>=0.3.0
 langchain-google-genai>=2.0.0
 
-# ---- Perception (Phase 3+): heavy (pulls in torch). Install when starting Phase 3 ----
-# ultralytics>=8.2.0
-# easyocr>=1.7.0
-# opencv-python>=4.9.0
+# ---- Perception (Phase 3): off-the-shelf YOLO + OCR. Heavy (pulls in torch) ----
+ultralytics>=8.2.0
+easyocr>=1.7.0
+opencv-python-headless>=4.9.0
 
 # ---- Dashboard (Phase 5) ----
 # streamlit>=1.36.0
