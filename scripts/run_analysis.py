@@ -11,6 +11,7 @@ Requires GEMINI_API_KEY in .env (see .env.example).
 """
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import sys
@@ -18,9 +19,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from agents.analyst import advisory_text  # noqa: E402
 from config.settings import settings  # noqa: E402
-from core.features import compute_features  # noqa: E402
-from core.llm import LLMError, LLMNotConfigured  # noqa: E402
+from core.features import compute_features, compute_temporal_summary  # noqa: E402
+from core.llm import LLMError, LLMNotConfigured, render_in_language  # noqa: E402
 from core.models import RootCauseVerdict  # noqa: E402
 from sim.scenarios.loader import SumoNotFoundError  # noqa: E402
 
@@ -63,11 +65,30 @@ def print_verdict(v: RootCauseVerdict, benchmark: dict | None) -> None:
     print("=" * 68)
 
 
+def _print_block(title: str, body: str) -> None:
+    print("\n" + "-" * 68)
+    print(f"  {title}")
+    print("-" * 68)
+    for line in body.splitlines():
+        print(f"  {line}")
+    print("-" * 68)
+
+
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    scenario = sys.argv[1] if len(sys.argv) > 1 else "rush"
+    ap = argparse.ArgumentParser(description="Root-cause analysis + multilingual advisory.")
+    ap.add_argument("scenario", nargs="?", default="rush")
+    ap.add_argument("--advisory-lang", default="Hindi",
+                    help="language to render the authority advisory in (default: Hindi)")
+    ap.add_argument("--no-advisory", action="store_true",
+                    help="skip the translated advisory")
+    ap.add_argument("--temporal", action="store_true",
+                    help="also report the cross-scenario temporal pattern "
+                         "(runs the 4 profiles once, then cached)")
+    args = ap.parse_args()
+    scenario = args.scenario
 
-    # Local import so a missing key/SUMO is reported cleanly, not at import time.
+    from agents.analyst import AnalystAgent
     from agents.supervisor import build_supervisor
 
     try:
@@ -81,26 +102,41 @@ def main() -> int:
 
     try:
         print("Invoking supervisor -> analyst (Gemini)...")
-        supervisor = build_supervisor()
-        result = supervisor.invoke({"features": features, "benchmark": benchmark})
+        result = build_supervisor().invoke({"features": features, "benchmark": benchmark})
+        verdict: RootCauseVerdict = result["verdict"]
+        print_verdict(verdict, benchmark)
+        out = settings.outputs_dir / f"verdict.{scenario}.json"
+        out.write_text(verdict.model_dump_json(indent=2))
+        print(f"\nSaved verdict -> {out}")
+
+        # Multilingual advisory (output-side): render the advisory for the authority.
+        if not args.no_advisory:
+            print(f"\nRendering advisory in {args.advisory_lang}...")
+            english = advisory_text(verdict)
+            advisory = render_in_language(english, args.advisory_lang)
+            _print_block(f"ADVISORY ({args.advisory_lang}) — for the authority", advisory)
+            # Persist both languages for the dashboard's English/Hindi toggle.
+            adv_path = settings.outputs_dir / f"advisory.{scenario}.json"
+            adv = json.loads(adv_path.read_text()) if adv_path.exists() else {}
+            adv["english"] = english
+            adv[args.advisory_lang] = advisory
+            adv_path.write_text(json.dumps(adv, indent=2, ensure_ascii=False))
+
+        # Temporal pattern across the day/week contexts.
+        if args.temporal:
+            print("\nComputing temporal pattern across the 4 profiles "
+                  "(cached after first run)...")
+            temporal = compute_temporal_summary()
+            pattern = AnalystAgent().temporal_pattern(temporal)
+            _print_block("TEMPORAL PATTERN (off-peak / weekday / rush / weekend)", pattern)
+
     except LLMNotConfigured as exc:
         print(f"\n⚠️  USER ACTION NEEDED — Gemini not configured: {exc}")
         print("Add GEMINI_API_KEY to .env, then re-run this script.")
-        print("(The computed features above were produced fine; only the LLM "
-              "verdict needs the key.)")
         return 3
     except LLMError as exc:
         print(f"\n⚠️  USER ACTION NEEDED — Gemini call failed:\n    {exc}")
-        print("\n(The computed features were produced fine; only the LLM verdict "
-              "is blocked. Fix billing/quota or GEMINI_MODEL, then re-run.)")
         return 4
-
-    verdict: RootCauseVerdict = result["verdict"]
-    print_verdict(verdict, benchmark)
-
-    out = settings.outputs_dir / f"verdict.{scenario}.json"
-    out.write_text(verdict.model_dump_json(indent=2))
-    print(f"\nSaved verdict -> {out}")
     return 0
 
 

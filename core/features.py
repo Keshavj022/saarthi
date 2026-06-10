@@ -14,6 +14,7 @@ side-effect-free for unit testing without SUMO.
 """
 from __future__ import annotations
 
+import json
 import logging
 from typing import Optional
 
@@ -25,6 +26,15 @@ from sim.scenarios import loader
 from sim.scenarios.loader import TLS_ID
 
 log = logging.getLogger(__name__)
+
+# The demand profiles double as time-of-day / day-of-week contexts so the Analyst
+# can state temporal patterns ("congests during the weekday evening peak").
+SCENARIO_TIME_LABELS = {
+    "rush": "weekday evening peak (approx. 6-8 PM)",
+    "weekday": "typical weekday daytime",
+    "weekend": "weekend daytime",
+    "offpeak": "off-peak / late-night",
+}
 
 
 # --------------------------- pure helpers (testable) ---------------------------
@@ -174,3 +184,36 @@ def compute_features(
             "ped_phase_backup_ratio": round(q_ped / max(q_veh, 0.1), 2),
         },
     }
+
+
+def compute_temporal_summary(
+    scenarios: tuple[str, ...] = ("offpeak", "weekday", "rush", "weekend"),
+    *,
+    use_cache: bool = True,
+) -> dict:
+    """Congestion metrics for the junction across time contexts (the 4 profiles).
+
+    Feeds the Analyst's temporal-pattern statement. Results are deterministic
+    (fixed seed) so they're cached to data/outputs/temporal.json after the first
+    (multi-simulation) run.
+    """
+    cache_path = settings.outputs_dir / "temporal.json"
+    if use_cache and cache_path.exists():
+        return json.loads(cache_path.read_text())
+
+    summary: dict = {"junction_id": TLS_ID, "scenarios": {}}
+    for scen in scenarios:
+        f = compute_features(scen)
+        summary["scenarios"][scen] = {
+            "time_context": SCENARIO_TIME_LABELS.get(scen, scen),
+            "avg_vehicle_wait_s": f["overall"]["avg_vehicle_wait_s"],
+            "avg_total_queue_veh": f["overall"]["avg_total_queue_veh"],
+            "peak_total_queue_veh": f["overall"]["peak_total_queue_veh"],
+            "dominant_axis": f["directional_imbalance"]["dominant_axis"],
+            "imbalance_ratio": f["directional_imbalance"]["imbalance_ratio"],
+            "avg_pedestrian_delay_s": f["overall"]["avg_pedestrian_delay_s"],
+            "peak_pedestrian_waiting": f["pedestrians"]["peak_waiting_count"],
+        }
+    settings.ensure_dirs()
+    cache_path.write_text(json.dumps(summary, indent=2))
+    return summary

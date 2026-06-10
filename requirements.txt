@@ -36,9 +36,11 @@ easyocr>=1.7.0
 opencv-python-headless>=4.9.0
 
 # ---- Dashboard (Phase 5) ----
-# streamlit>=1.36.0
+streamlit>=1.36.0
 
 # ---- RL Tier-2 (Phase 6, optional) ----
-# sumo-rl>=1.4.5
-# stable-baselines3>=2.3.0
-# gymnasium>=0.29.0
+# A custom Gymnasium env (control/rl/env.py) is used INSTEAD of sumo-rl so the RL
+# agent shares the exact NS/EW/PED phase model as the other controllers (a fair,
+# consistent benchmark). sumo-rl is therefore not required.
+stable-baselines3>=2.3.0
+gymnasium>=0.29.0

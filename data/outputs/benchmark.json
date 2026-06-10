@@ -25,5 +25,18 @@
     "avg_ped_delay_s": 38.01
   },
   "wait_reduction_pct": 44.6,
-  "ped_delay_reduction_pct": 7.3
+  "ped_delay_reduction_pct": 7.3,
+  "rl": {
+    "scenario": "rush",
+    "controller": "rl",
+    "avg_wait_s": 29.33,
+    "avg_queue": 19.23,
+    "peak_queue": 66,
+    "num_vehicles": 2502,
+    "avg_travel_time_s": 78.4,
+    "sim_steps": 3759,
+    "num_pedestrians": 240,
+    "avg_ped_delay_s": 33.61
+  },
+  "rl_wait_reduction_pct": 77.8
 }
