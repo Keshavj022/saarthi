@@ -26,10 +26,9 @@ matplotlib>=3.8
 pytest>=8.0
 
 # ---- Reasoning layer (Phase 2+): LangGraph + Gemini ----
-# Uncomment when starting Phase 2:
-# langgraph>=0.2.0
-# langchain-core>=0.3.0
-# langchain-google-genai>=2.0.0
+langgraph>=0.2.0
+langchain-core>=0.3.0
+langchain-google-genai>=2.0.0
 
 # ---- Perception (Phase 3+): heavy (pulls in torch). Install when starting Phase 3 ----
 # ultralytics>=8.2.0

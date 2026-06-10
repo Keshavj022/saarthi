@@ -1,29 +1,29 @@
 {
-  "scenario": "weekday",
+  "scenario": "rush",
   "fixed_time": {
-    "scenario": "weekday",
+    "scenario": "rush",
     "controller": "fixed_time",
-    "avg_wait_s": 102.2,
-    "avg_queue": 44.74,
-    "peak_queue": 85,
-    "num_vehicles": 1901,
-    "avg_travel_time_s": 160.83,
-    "sim_steps": 4287,
-    "num_pedestrians": 150,
-    "avg_ped_delay_s": 48.97
+    "avg_wait_s": 132.36,
+    "avg_queue": 62.29,
+    "peak_queue": 102,
+    "num_vehicles": 2502,
+    "avg_travel_time_s": 197.36,
+    "sim_steps": 5259,
+    "num_pedestrians": 240,
+    "avg_ped_delay_s": 41.0
   },
   "max_pressure": {
-    "scenario": "weekday",
+    "scenario": "rush",
     "controller": "max_pressure",
-    "avg_wait_s": 17.62,
-    "avg_queue": 8.37,
-    "peak_queue": 28,
-    "num_vehicles": 1901,
-    "avg_travel_time_s": 58.26,
-    "sim_steps": 3825,
-    "num_pedestrians": 150,
-    "avg_ped_delay_s": 35.05
+    "avg_wait_s": 73.28,
+    "avg_queue": 46.44,
+    "peak_queue": 114,
+    "num_vehicles": 2502,
+    "avg_travel_time_s": 135.5,
+    "sim_steps": 3878,
+    "num_pedestrians": 240,
+    "avg_ped_delay_s": 38.01
   },
-  "wait_reduction_pct": 82.8,
-  "ped_delay_reduction_pct": 28.4
+  "wait_reduction_pct": 44.6,
+  "ped_delay_reduction_pct": 7.3
 }

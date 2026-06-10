@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # --- External services (used from Phase 2 on) ---
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-2.0-flash"
 
     # --- SUMO ---
     # SUMO is a system install; SUMO_HOME may come from the shell or .env.
