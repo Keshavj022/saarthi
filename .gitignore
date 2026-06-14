@@ -15,12 +15,20 @@ venv/
 data/app.db
 data/outputs/*
 !data/outputs/.gitkeep
-# Keep the headline benchmark artifacts in the repo (reproducible via
-# scripts/run_benchmark.py, but committed so the result is always visible).
+# Keep the demo-critical artifacts in the repo (all reproducible via scripts,
+# but committed so the dashboard tells the story out-of-the-box).
 !data/outputs/benchmark.png
 !data/outputs/benchmark.json
+!data/outputs/verdict.*.json
+!data/outputs/advisory.*.json
+!data/outputs/details.*.json
+!data/outputs/temporal.json
 data/videos/*
 !data/videos/.gitkeep
+
+# ---- Generated live-sim networks (rebuilt on demand by sim/network_defs.py) ----
+sim/networks/gen/
+sim/networks/net_*.net.xml
 
 # ---- SUMO run artifacts (generated; the .net.xml is built from inputs) ----
 *.tripinfo.xml

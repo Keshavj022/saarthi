@@ -11,7 +11,7 @@ import json
 import logging
 
 from core import llm
-from core.models import RootCauseVerdict
+from core.models import DetailedAnalysis, RootCauseVerdict
 
 log = logging.getLogger(__name__)
 
@@ -31,9 +31,13 @@ Rules:
   problem. A pedestrian backup ratio well above 1 means the walk phase is holding
   vehicles up.
 - Ground `expected_impact` in the BENCHMARK when provided: cite the % wait-time
-  reduction adaptive (max-pressure) control achieves.
+  reduction that adaptive signal control achieves.
 - Write `headline`, `recommendation` and `justification` in plain, specific
   language an operator can act on, citing concrete numbers (queues, ratios, times).
+- PLAIN LANGUAGE ONLY. A non-technical official must understand every word. Do NOT
+  use jargon or software/algorithm names — never write "max-pressure",
+  "reinforcement learning", "RL", "PPO", "SUMO", "TraCI", "LLM". Say "adaptive
+  signal control" or "smart signal timing", and "the analysis"/"the simulation".
 """
 
 
@@ -67,8 +71,56 @@ def advisory_text(verdict) -> str:
     )
 
 
+def translate_verdict(verdict: RootCauseVerdict, language: str) -> RootCauseVerdict:
+    """Return the verdict with its human-readable text translated into `language`.
+
+    Numbers (cause_breakdown, confidence) and identifiers are kept exactly the same —
+    only the prose fields are translated — so the whole Analysis page can render in
+    one language without re-running the simulation.
+    """
+    if language.strip().lower() == "english":
+        return verdict
+    prompt = (
+        f"Translate the human-readable text of this traffic root-cause verdict into plain, "
+        f"natural {language} for a control-room operator. Translate these fields: headline, "
+        f"primary_cause, recommendation, expected_impact, justification, temporal_note. Keep "
+        f"cause_breakdown, confidence, junction_id, scenario, and every number / percentage / "
+        f"place name EXACTLY the same. No jargon, no transliteration notes.\n\n"
+        f"{verdict.model_dump_json(indent=2)}"
+    )
+    return llm.structured(
+        prompt, RootCauseVerdict,
+        system=f"You translate traffic-authority analysis into {language}. Return the same "
+               f"structured fields with the text translated and every number unchanged.")
+
+
+def translate_details(details: dict, language: str) -> dict:
+    """Return a deep-dive report with its narrative translated into `language`.
+
+    The concrete instances (episodes, queues, times) stay as-is; only the AI narrative
+    (diagnosis / evidence / actions / expected_outcome) is translated.
+    """
+    if language.strip().lower() == "english":
+        return details
+    a = details.get("analysis") or {}
+    src = {"diagnosis": a.get("diagnosis", ""), "evidence": a.get("evidence", []),
+           "actions": a.get("actions", []), "expected_outcome": a.get("expected_outcome", "")}
+    prompt = (
+        f"Translate this traffic deep-dive analysis into plain, natural {language}. Keep all "
+        f"numbers, times and place names. Return the same four fields, translated.\n\n"
+        f"{json.dumps(src, ensure_ascii=False)}"
+    )
+    t = llm.structured(
+        prompt, DetailedAnalysis,
+        system=f"You translate traffic-authority analysis into {language}; return the same fields translated.")
+    out = dict(details)
+    out["analysis"] = {**a, "diagnosis": t.diagnosis, "evidence": t.evidence,
+                       "actions": t.actions, "expected_outcome": t.expected_outcome}
+    return out
+
+
 class AnalystAgent:
-    """Wraps the Gemini call that turns features into a structured verdict."""
+    """Wraps the AI call that turns features into a structured verdict."""
 
     name = "analyst"
 
@@ -97,4 +149,5 @@ TEMPORAL_SYSTEM = """You are a traffic engineer briefing a control-room operator
 Given congestion metrics for ONE junction across different time-of-day / day-of-week \
 contexts, state the time-based congestion pattern in 2-4 plain sentences: when it is \
 worst and best, and what changes between contexts (queue levels, directional \
-imbalance, pedestrian load). Cite specific numbers. Be concise and operational."""
+imbalance, pedestrian load). Cite specific numbers. Be concise and operational. Use \
+plain language only — no technical jargon or software/algorithm names."""

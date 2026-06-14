@@ -29,8 +29,10 @@ class Settings(BaseSettings):
     )
 
     # --- External services (used from Phase 2 on) ---
-    gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    # The reasoning layer (root-cause analyst, enforcement, multilingual advisory)
+    # runs on Anthropic's Claude models via langchain-anthropic.
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-opus-4-8"
 
     # --- SUMO ---
     # SUMO is a system install; SUMO_HOME may come from the shell or .env.

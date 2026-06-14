@@ -31,7 +31,7 @@ st.caption("Junction C · real-time adaptive control + AI root-cause reasoning +
 st.sidebar.markdown(
     "**Two decision speeds**\n\n"
     "- *Fast:* max-pressure signal control (per-second).\n"
-    "- *Slow:* LangGraph + Gemini agents (root cause, advice, enforcement).\n\n"
+    "- *Slow:* LangGraph + Claude agents (root cause, advice, enforcement).\n\n"
     "The **Live Simulation** tab runs SUMO with your parameters. "
     "**Analysis & Enforcement** reads real pipeline outputs."
 )

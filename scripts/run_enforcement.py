@@ -71,10 +71,10 @@ def main() -> int:
     try:
         result = build_supervisor().invoke({"violation_event": event})
     except LLMNotConfigured as exc:
-        print(f"\n⚠️  USER ACTION NEEDED — Gemini not configured: {exc}")
+        print(f"\n⚠️  USER ACTION NEEDED — AI not configured: {exc}")
         return 3
     except LLMError as exc:
-        print(f"\n⚠️  Gemini call failed:\n    {exc}")
+        print(f"\n⚠️  AI call failed:\n    {exc}")
         return 4
 
     challan_id = result["challan_id"]

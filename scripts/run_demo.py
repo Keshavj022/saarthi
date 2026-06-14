@@ -60,8 +60,9 @@ def main() -> int:
     print("           ->  drafted challan (pending officer review)")
     print("           ->  close")
     print("=" * 64)
-    print("\nNow launch the dashboard:")
-    print("    ./.venv/bin/streamlit run dashboard/app.py")
+    print("\nNow launch the web app:")
+    print("    python scripts/run_app.py        # -> http://127.0.0.1:8000")
+    print("(legacy Streamlit fallback: streamlit run dashboard/app.py)")
     return 0
 
 

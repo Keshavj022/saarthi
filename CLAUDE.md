@@ -15,7 +15,7 @@ An **agentic decision-support system for traffic authorities** (control-room ope
 
 **Architecture — two decision speeds:**
 - **Fast control layer** (heuristic / RL): reflexive, second-by-second signal decisions at one junction, optimizing wait time.
-- **Slow reasoning layer** (LLM agents via LangGraph + Gemini): deliberative root-cause attribution, language, and judgment.
+- **Slow reasoning layer** (LLM agents via LangGraph + Claude/Anthropic): deliberative root-cause attribution, language, and judgment.
 
 This fast/slow split is deliberate and is the answer to "is this RL or agentic?" — it is both, by design, each doing what it is good at. Reflect this separation in the code structure.
 
@@ -45,7 +45,7 @@ This fast/slow split is deliberate and is the answer to "is this RL or agentic?"
 ### Things that require MY intervention — flag, don't fake
 Whenever a step needs something only I can provide or do, **flag it inline with a `⚠️ USER ACTION NEEDED:` prefix and pause if you're blocked.** Never invent API keys, never fabricate datasets, never fake results or demo output. Likely intervention points (collect these as you go for the final README):
 - Installing **SUMO** (system-level install + `SUMO_HOME`, not a pip package).
-- Providing the **Gemini API key**.
+- Providing the **Anthropic API key**.
 - Providing **sample traffic video footage** (ideally Indian roads) for perception/ANPR.
 - Downloading any model weights that aren't auto-fetched.
 - The **pedestrian-responsive phasing decision** (see Phase 1).
@@ -94,7 +94,7 @@ saarthi/                        # repo root (already a git repo)
 │   ├── features.py             # compute summary features for the analyst
 │   ├── metrics.py              # wait-time / queue metrics + benchmark runner
 │   ├── models.py               # pydantic data models (events, verdicts, challans)
-│   ├── llm.py                  # Gemini client wrapper (+ multilingual rendering)
+│   ├── llm.py                  # Claude client wrapper (+ multilingual rendering)
 │   └── db.py                   # SQLite access
 ├── dashboard/
 │   └── app.py                  # Streamlit authority dashboard
@@ -123,7 +123,7 @@ Add a `.gitignore` early (ignore `.env`, `data/app.db`, `data/outputs/*`, model 
 | RL (Tier 2, optional) | **sumo-rl** + **stable-baselines3** (PPO or DQN) + gymnasium |
 | Detection | **ultralytics** (YOLO) |
 | ANPR | plate detector + **EasyOCR** (or PaddleOCR) + OpenCV |
-| Agents | **LangGraph** + **langchain-google-genai** (Gemini) |
+| Agents | **LangGraph** + **langchain-anthropic** (Claude) |
 | Backend (if needed) | **FastAPI** + uvicorn |
 | Dashboard | **Streamlit** (pragmatic default; charts/tables fast) |
 | Storage | **SQLite** (via SQLAlchemy or stdlib) |
@@ -179,16 +179,16 @@ Tasks:
 **Goal:** the LangGraph supervisor + Analyst producing a root-cause verdict and recommendation. After this phase the project is a complete, defensible submission.
 
 Tasks:
-- `⚠️ USER ACTION NEEDED:` confirm the Gemini API key is in `.env`; pause if missing.
-- `core/llm.py`: a thin Gemini client wrapper (chat + a `render_in_language()` helper for later).
+- `⚠️ USER ACTION NEEDED:` confirm the Anthropic API key is in `.env`; pause if missing.
+- `core/llm.py`: a thin Claude client wrapper (chat + a `render_in_language()` helper for later).
 - `core/features.py`: from simulation runs, compute structured summary features — per-approach average queue, queue growth over time, peak congestion windows by time bucket, and (if pedestrians are modeled) pedestrian wait and correlation between pedestrian phase and vehicle backup. Output a clean JSON-able dict. **Computed features make the attribution credible — do not let the LLM guess from raw logs.**
-- `agents/analyst.py`: takes the feature dict, prompts Gemini, returns a **structured** root-cause attribution (e.g. `{cause_breakdown: {vehicles, pedestrians, parking}, recommendation, justification}` via a pydantic model in `core/models.py`).
+- `agents/analyst.py`: takes the feature dict, prompts Claude, returns a **structured** root-cause attribution (e.g. `{cause_breakdown: {vehicles, pedestrians, parking}, recommendation, justification}` via a pydantic model in `core/models.py`).
 - `agents/supervisor.py`: a LangGraph supervisor that holds shared state and routes to the Analyst (and later Enforcement). Wire it so it's extensible for more agents.
 - `scripts/run_analysis.py`: runs a scenario, computes features, invokes the supervisor→analyst, and **prints the verdict** plus references the benchmark chart.
 
 **Acceptance:** I can run the analysis end-to-end and get a coherent, structured "why this junction congests + what to do" verdict grounded in the computed features. A minimal text/CLI output is fine here — the polished dashboard is Phase 5.
 
-→ End-of-phase protocol. Suggested commit: `feat: LangGraph supervisor + root-cause analyst agent (Gemini)`.
+→ End-of-phase protocol. Suggested commit: `feat: LangGraph supervisor + root-cause analyst agent (Claude)`.
 
 ---
 
@@ -266,7 +266,7 @@ Write `README.md` covering **everything**:
 - **How to run** — each script and the dashboard, with commands; **how to reproduce the before/after benchmark** specifically.
 - **Demo flow** — the scripted walkthrough.
 - **Project structure.**
-- **⚠️ Things that need my manual intervention** — a dedicated, prominent section compiling everything flagged during the build: install SUMO, obtain/set the Gemini API key, provide sample footage, download any weights, the pedestrian-responsiveness decision, run git commit/push myself, record the demo, plus anything else that came up.
+- **⚠️ Things that need my manual intervention** — a dedicated, prominent section compiling everything flagged during the build: install SUMO, obtain/set the Anthropic API key, provide sample footage, download any weights, the pedestrian-responsiveness decision, run git commit/push myself, record the demo, plus anything else that came up.
 - **Results** — state the achieved wait-time reduction and (honestly) ANPR/RL caveats.
 - **Future scope & explicitly out-of-scope** — note the consumer-facing rerouting app, multilingual input, multi-junction RL, and auto-issued challans are intentionally out of scope (shows discipline, not omission).
 - **FAR AWAY submission notes** — repo has full source, docs, setup, and a maintained commit history.

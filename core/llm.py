@@ -1,4 +1,4 @@
-"""Thin Gemini client wrapper for Saarthi's reasoning layer.
+"""Thin Claude (Anthropic) client wrapper for Saarthi's reasoning layer.
 
 Centralises model construction (one place reads the key from settings) and offers
 three entry points used across the agents:
@@ -7,8 +7,8 @@ three entry points used across the agents:
   * `structured()`  — completion forced into a pydantic schema (reliable parsing),
   * `render_in_language()` — render text into an Indian language (Phase 4).
 
-Raises `LLMNotConfigured` with a clear message if the Gemini API key is absent,
-so callers (scripts) can fail gracefully instead of deep inside langchain.
+Raises `LLMNotConfigured` with a clear message if the API key is absent, so
+callers (scripts) can fail gracefully instead of deep inside langchain.
 """
 from __future__ import annotations
 
@@ -24,35 +24,35 @@ log = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
+# Anthropic requires an explicit output cap. The reasoning layer emits compact
+# structured verdicts and short advisories, so this is generous headroom.
+_MAX_TOKENS = 2048
+
 
 class LLMNotConfigured(RuntimeError):
-    """Raised when GEMINI_API_KEY is not configured."""
+    """Raised when the reasoning-layer API key is not configured."""
 
 
 class LLMError(RuntimeError):
-    """A Gemini API call failed (quota, billing, bad key, etc.) — clean message."""
+    """An AI call failed (quota, billing, bad key, etc.) — clean message."""
 
 
-def _normalize_model(name: str) -> str:
-    """Accept friendly names like 'Gemini 2.5 Flash' -> API id 'gemini-2.5-flash'."""
-    norm = name.strip().lower().replace(" ", "-")
-    return norm.removeprefix("models/")
-
-
-@lru_cache(maxsize=4)
-def _client(temperature: float):
-    if not settings.gemini_api_key:
+@lru_cache(maxsize=1)
+def _client():
+    if not settings.anthropic_api_key:
         raise LLMNotConfigured(
-            "GEMINI_API_KEY is not set. Add it to .env (see .env.example) to use "
+            "ANTHROPIC_API_KEY is not set. Add it to .env (see .env.example) to use "
             "the reasoning layer."
         )
-    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_anthropic import ChatAnthropic
 
-    return ChatGoogleGenerativeAI(
-        model=_normalize_model(settings.gemini_model),
-        google_api_key=settings.gemini_api_key,
-        temperature=temperature,
-        max_retries=2,  # fail fast on hard errors (billing/quota) instead of ~35s
+    # No temperature / top_p / top_k — the default model (Claude Opus 4.x) rejects
+    # sampling parameters. Behaviour is steered through the prompts instead.
+    return ChatAnthropic(
+        model=settings.anthropic_model.strip(),
+        api_key=settings.anthropic_api_key,
+        max_tokens=_MAX_TOKENS,
+        max_retries=2,  # fail fast on hard errors (billing/quota) instead of long backoff
     )
 
 
@@ -64,24 +64,24 @@ def _invoke(runnable, messages):
         raise
     except Exception as exc:  # external boundary: normalise provider errors
         text = str(exc)
-        if "RESOURCE_EXHAUSTED" in text or "429" in text:
+        low = text.lower()
+        if any(s in low for s in ("rate_limit", "429", "overloaded", "529", "credit", "billing")):
             raise LLMError(
-                "Gemini quota/credits exhausted (HTTP 429). The API key is valid, "
-                "but the project has no available quota — enable billing / add "
-                "credits in Google AI Studio, or use a key with free-tier quota. "
-                f"Current model: {settings.gemini_model}."
+                "The AI service is rate-limited or out of credits (HTTP 429). The key "
+                "is valid, but there is no available quota — check the Anthropic "
+                f"account's usage/billing, then retry. Current model: {settings.anthropic_model}."
             ) from exc
-        if any(s in text for s in ("API_KEY_INVALID", "PERMISSION_DENIED", "401", "403")):
+        if any(s in low for s in ("authentication", "permission", "401", "403", "invalid x-api-key", "invalid_api_key")):
             raise LLMError(
-                f"Gemini rejected the request — check GEMINI_API_KEY / model access. "
-                f"({text[:150]})"
+                "The AI service rejected the request — check ANTHROPIC_API_KEY / model "
+                f"access. ({text[:150]})"
             ) from exc
-        if "NOT_FOUND" in text or "404" in text:
+        if "not_found" in low or "404" in low:
             raise LLMError(
-                f"Gemini model '{settings.gemini_model}' not found for this key. "
-                f"Set GEMINI_MODEL in .env to a model you can access."
+                f"AI model '{settings.anthropic_model}' not found for this key. "
+                f"Set ANTHROPIC_MODEL in .env to a model you can access."
             ) from exc
-        raise LLMError(f"Gemini call failed: {text[:200]}") from exc
+        raise LLMError(f"AI call failed: {text[:200]}") from exc
 
 
 def _messages(prompt: str, system: str | None) -> list[tuple[str, str]]:
@@ -93,15 +93,19 @@ def _messages(prompt: str, system: str | None) -> list[tuple[str, str]]:
 
 
 def chat(prompt: str, *, system: str | None = None, temperature: float = 0.2) -> str:
-    """Free-text completion; returns the model's text."""
-    response = _invoke(_client(temperature), _messages(prompt, system))
+    """Free-text completion; returns the model's text.
+
+    `temperature` is accepted for call-site compatibility but not forwarded — the
+    default Claude model rejects sampling parameters.
+    """
+    response = _invoke(_client(), _messages(prompt, system))
     return response.content if hasattr(response, "content") else str(response)
 
 
 def structured(prompt: str, schema: Type[T], *, system: str | None = None,
                temperature: float = 0.1) -> T:
     """Completion constrained to `schema`; returns a validated pydantic instance."""
-    client = _client(temperature).with_structured_output(schema)
+    client = _client().with_structured_output(schema)
     return _invoke(client, _messages(prompt, system))
 
 

@@ -23,7 +23,7 @@ flagged violation event you must:
 1. Judge whether it is a genuine, citable violation given the evidence.
 2. Assemble a concise evidence summary.
 3. Propose a fine in INR appropriate to the violation type under Indian norms
-   (e.g. red-light jumping ~1000-5000 INR).
+   (e.g. over-speeding ~1000-2000 INR, red-light jumping ~1000-5000 INR).
 4. Draft a formal challan (citation) notice addressed to the vehicle owner.
 
 CRITICAL RULES:

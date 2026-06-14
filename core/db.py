@@ -107,3 +107,12 @@ def update_status(challan_id: int, status: str,
         raise ValueError(f"Invalid status {status!r}; must be one of {VALID_STATUSES}")
     with _conn(db_path) as con:
         con.execute("UPDATE challans SET status = ? WHERE id = ?", (status, challan_id))
+
+
+def clear_pending(db_path: Optional[str | Path] = None) -> int:
+    """Delete pending (un-reviewed) challans — used to refresh the queue per run.
+    Approved/rejected challans are kept as a record."""
+    init_db(db_path)
+    with _conn(db_path) as con:
+        cur = con.execute("DELETE FROM challans WHERE status = ?", (PENDING,))
+        return cur.rowcount

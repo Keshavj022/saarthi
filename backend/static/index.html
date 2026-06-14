@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saarthi — Traffic Authority Decision Support</title>
+  <link rel="stylesheet" href="/styles.css?v=7" />
+  <script src="/vendor/chart.umd.min.js" defer></script>
+  <script src="/render.js?v=7" defer></script>
+  <script src="/live.js?v=7" defer></script>
+  <script src="/experiments.js?v=7" defer></script>
+  <script src="/analysis.js?v=7" defer></script>
+  <script src="/app.js?v=7" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◈</span>
+      <div>
+        <h1>Saarthi</h1>
+        <p>Smart traffic signals &amp; AI analysis · live junction lab</p>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-view="live">Live Simulation</button>
+      <button class="tab" data-view="experiments">Experiments</button>
+      <button class="tab" data-view="analysis">Analysis &amp; Enforcement</button>
+    </nav>
+    <div class="status-pill" id="conn">ready</div>
+  </header>
+
+  <!-- ============================ LIVE ============================ -->
+  <main id="view-live" class="view active">
+    <div class="live-shell">
+
+      <!-- collapsible parameters drawer (initially open) -->
+      <section class="panel controls">
+        <div class="drawer-head">
+          <h2>Simulation parameters</h2>
+          <button id="params-toggle" class="icon-btn" aria-expanded="true"
+                  aria-controls="params-body" aria-label="Collapse parameters"
+                  title="Collapse parameters">⟨</button>
+        </div>
+        <div class="drawer-body" id="params-body">
+          <label class="field-label">Mode</label>
+          <div class="segmented" id="simmode">
+            <button data-val="single" class="on">Single run</button>
+            <button data-val="ab">Before vs after</button>
+          </div>
+
+          <label class="field-label">Junction layout</label>
+          <div class="segmented" id="network">
+            <button data-val="cross" class="on">4-way</button>
+            <button data-val="tee">T-junction</button>
+            <button data-val="asym">Main road × side</button>
+            <button data-val="highway">Highway</button>
+            <button data-val="boulevard">Boulevard</button>
+            <button data-val="roundabout">Roundabout</button>
+          </div>
+          <p class="hint" id="network-blurb"></p>
+
+          <div id="controller-row">
+            <label class="field-label">Signal method</label>
+            <div class="segmented" id="controller">
+              <button data-val="fixed_time">Fixed timer</button>
+              <button data-val="max_pressure" class="on">Smart adaptive</button>
+              <button data-val="rl">Self-learning AI</button>
+            </div>
+          </div>
+
+          <label class="field-label">Traffic mix</label>
+          <div class="segmented" id="mix">
+            <button data-val="cars" class="on">Cars only</button>
+            <button data-val="mixed">Mixed (cars·bikes·buses)</button>
+          </div>
+
+          <div class="slider">
+            <label>E–W demand <span id="ew-val">650</span> veh/h</label>
+            <input type="range" id="ew" min="100" max="1200" step="50" value="650" />
+          </div>
+          <div class="slider">
+            <label>N–S demand <span id="ns-val">220</span> veh/h</label>
+            <input type="range" id="ns" min="50" max="900" step="25" value="220" />
+          </div>
+          <div class="slider">
+            <label>Pedestrians <span id="ped-val">240</span> /h</label>
+            <input type="range" id="ped" min="0" max="600" step="20" value="240" />
+          </div>
+          <div class="slider">
+            <label>Duration <span id="dur-val">480</span> s</label>
+            <input type="range" id="dur" min="120" max="1200" step="60" value="480" />
+          </div>
+
+          <label class="field-label">Playback speed</label>
+          <div class="segmented" id="speed">
+            <button data-val="1">1×</button>
+            <button data-val="2">2×</button>
+            <button data-val="4" class="on">4×</button>
+            <button data-val="8">8×</button>
+          </div>
+
+          <button id="run" class="btn-primary">▶ Run simulation</button>
+          <p class="hint" id="run-hint">Keep the demand fixed and switch controllers (or layouts) to compare.</p>
+
+          <div id="result" class="result hidden">
+            <h3>Result</h3>
+            <div class="result-grid">
+              <div><span id="r-wait">–</span><label>avg vehicle wait</label></div>
+              <div><span id="r-ped">–</span><label>avg ped delay</label></div>
+              <div><span id="r-peak">–</span><label>peak queue</label></div>
+              <div><span id="r-veh">–</span><label>vehicles</label></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- stage column: giant canvas + slim chart -->
+      <div class="stage-col">
+        <section class="panel stage">
+          <div id="stage-single">
+            <div class="stage-head">
+              <div class="chip"><label>time</label><span id="m-time">0s</span></div>
+              <div class="chip"><label>phase</label><span id="m-phase" class="phase">–</span></div>
+              <div class="chip"><label>queue</label><span id="m-queue">0</span></div>
+              <div class="chip"><label>peds waiting</label><span id="m-peds">0</span></div>
+            </div>
+            <canvas id="junction" width="900" height="900"></canvas>
+          </div>
+
+          <div id="stage-ab" class="hidden">
+            <div class="stage-head">
+              <div class="chip"><label>synchronized time</label><span id="ab-time">0s</span></div>
+            </div>
+            <div class="ab-grid">
+              <figure>
+                <canvas id="junctionA" width="700" height="700"></canvas>
+                <figcaption id="cap-A" class="ab-cap before">BEFORE · fixed-time</figcaption>
+              </figure>
+              <figure>
+                <canvas id="junctionB" width="700" height="700"></canvas>
+                <figcaption id="cap-B" class="ab-cap after">AFTER · smart adaptive</figcaption>
+              </figure>
+            </div>
+            <div id="ab-delta" class="ab-delta hidden"></div>
+          </div>
+
+          <div class="legend">
+            <span><i class="dot moving"></i> car</span>
+            <span><i class="dot bus"></i> bus</span>
+            <span><i class="dot moto"></i> two-wheeler</span>
+            <span><i class="dot waiting"></i> braking/stopped</span>
+            <span><i class="dot ped"></i> pedestrian</span>
+          </div>
+        </section>
+
+        <section class="panel live-chart">
+          <h2>Queue &amp; wait over time</h2>
+          <canvas id="liveChart"></canvas>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ========================= EXPERIMENTS ========================= -->
+  <main id="view-experiments" class="view">
+    <section class="panel controls">
+      <h2>Comparison matrix</h2>
+      <p class="hint" style="margin-top:-6px">Run the same demand through every selected
+        controller × layout, headless, and compare the outcomes.</p>
+
+      <label class="field-label">Junction layouts</label>
+      <div class="segmented multi" id="ex-networks">
+        <button data-val="cross" class="on">4-way</button>
+        <button data-val="tee">T-junction</button>
+        <button data-val="asym">Main road × side</button>
+        <button data-val="highway">Highway</button>
+        <button data-val="boulevard">Boulevard</button>
+      </div>
+
+      <label class="field-label">Signal methods to compare</label>
+      <div class="segmented multi" id="ex-controllers">
+        <button data-val="fixed_time" class="on">Fixed timer</button>
+        <button data-val="max_pressure" class="on">Smart adaptive</button>
+        <button data-val="rl" class="on">Self-learning AI</button>
+      </div>
+
+      <label class="field-label">Traffic mix</label>
+      <div class="segmented" id="ex-mix">
+        <button data-val="cars" class="on">Cars only</button>
+        <button data-val="mixed">Mixed</button>
+      </div>
+
+      <div class="slider">
+        <label>E–W demand <span id="ex-ew-val">650</span> veh/h</label>
+        <input type="range" id="ex-ew" min="100" max="1200" step="50" value="650" />
+      </div>
+      <div class="slider">
+        <label>N–S demand <span id="ex-ns-val">220</span> veh/h</label>
+        <input type="range" id="ex-ns" min="50" max="900" step="25" value="220" />
+      </div>
+      <div class="slider">
+        <label>Pedestrians <span id="ex-ped-val">240</span> /h</label>
+        <input type="range" id="ex-ped" min="0" max="600" step="20" value="240" />
+      </div>
+      <div class="slider">
+        <label>Duration <span id="ex-dur-val">480</span> s</label>
+        <input type="range" id="ex-dur" min="120" max="900" step="60" value="480" />
+      </div>
+
+      <button id="ex-run" class="btn-primary">▶ Run experiment</button>
+      <div class="progress-outer hidden" id="ex-progress">
+        <div class="progress-inner" id="ex-progress-bar"></div>
+        <span class="progress-text" id="ex-progress-text"></span>
+      </div>
+      <p class="hint" id="ex-note"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Average vehicle wait by layout</h2>
+      <canvas id="exWaitChart"></canvas>
+      <h2 style="margin-top:18px">Average pedestrian delay</h2>
+      <canvas id="exPedChart"></canvas>
+      <p class="chart-empty" id="ex-empty">▶ Run a comparison to see vehicle-wait and pedestrian-delay charts by layout.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Queue over time</h2>
+      <canvas id="exTimelineChart"></canvas>
+      <p class="hint">Solid = 4-way · dashed = T-junction · dotted = main road × side.
+        Colour = signal method. A flat line means the junction stays clear.</p>
+    </section>
+
+    <section class="panel span-3">
+      <h2>Findings</h2>
+      <div id="ex-insights" class="insight muted">Run an experiment to generate findings.</div>
+      <div class="table-wrap"><table id="ex-table" class="hidden">
+        <thead><tr>
+          <th>Layout</th><th>Controller</th><th>Avg wait</th><th>Δ vs fixed-time</th>
+          <th>Ped delay</th><th>Peak queue</th><th>Vehicles</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+  </main>
+
+  <!-- ========================== ANALYSIS ========================== -->
+  <main id="view-analysis" class="view">
+    <div class="ana-flow">
+
+      <section class="panel span-2 ana-hero">
+        <div class="hero-left">
+          <h2>AI analysis pipeline</h2>
+          <p class="hero-sub">Watch the reasoning layer work: it simulates the junction,
+            computes diagnostic features, asks the AI <em>why</em> it congests, and writes
+            the advisory in your language — live.</p>
+          <label class="field-label">Scenario</label>
+          <div class="segmented" id="ana-scenario">
+            <button data-val="rush" class="on">Rush</button>
+            <button data-val="weekday">Weekday</button>
+            <button data-val="weekend">Weekend</button>
+            <button data-val="offpeak">Off-peak</button>
+          </div>
+          <button id="ana-run" class="btn-primary">▶ Run AI analysis</button>
+          <p class="hint" id="ana-hint">~20–60s: a full traffic simulation + AI reasoning, streamed live below.</p>
+        </div>
+        <div class="hero-right">
+          <div class="pipeline" id="pipeline">
+            <div class="pstep" data-k="sim"><div class="pdot"></div><label>Simulate</label></div>
+            <div class="pline" data-k="sim"></div>
+            <div class="pstep" data-k="feat"><div class="pdot"></div><label>Find pattern</label></div>
+            <div class="pline" data-k="feat"></div>
+            <div class="pstep" data-k="verdict"><div class="pdot"></div><label>Find cause</label></div>
+            <div class="pline" data-k="verdict"></div>
+            <div class="pstep" data-k="advisory"><div class="pdot"></div><label>Advise</label></div>
+            <div class="pline" data-k="advisory"></div>
+            <div class="pstep" data-k="enforce"><div class="pdot"></div><label>Enforce</label></div>
+          </div>
+          <div class="console" id="ana-console">
+            <div class="cline dim">— console idle · press ▶ Run AI analysis —</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="span-2 headline-band" id="headline-band">
+        <div class="hl"><div class="hl-v" id="hl-wait">–</div><div class="hl-k">less waiting with smart signals</div></div>
+        <div class="hl"><div class="hl-v" id="hl-cause">–</div><div class="hl-k">confident in the root cause</div></div>
+        <div class="hl"><div class="hl-v" id="hl-veh">–</div><div class="hl-k">vehicles handled in the run</div></div>
+        <div class="hl"><div class="hl-v" id="hl-challan">–</div><div class="hl-k">violations flagged for review</div></div>
+      </section>
+
+      <section class="panel span-2 ana-panel" id="panel-bench">
+        <div class="panel-head">
+          <h2>Before / after — smart signal timing</h2>
+          <span class="src-badge" id="b-bench"></span>
+        </div>
+        <div class="metric-row" id="bench-metrics"></div>
+        <canvas id="benchmarkChart" height="120"></canvas>
+      </section>
+
+      <div class="verdict-row">
+        <section class="panel verdict ana-panel" id="panel-verdict">
+          <div class="panel-head">
+            <h2>Root-cause verdict</h2>
+            <span class="src-badge" id="b-verdict"></span>
+          </div>
+          <div id="verdict-body"><p class="muted">Press ▶ Run AI analysis to produce the root-cause verdict.</p></div>
+        </section>
+        <section class="panel ana-panel" id="panel-cause">
+          <h2>Attribution</h2>
+          <canvas id="causeChart"></canvas>
+        </section>
+      </div>
+
+      <section class="panel advisory span-2 ana-panel" id="panel-advisory">
+        <div class="panel-head">
+          <h2>Advisory for the authority</h2>
+          <div class="lang-row">
+            <span class="src-badge" id="b-advisory"></span>
+            <label class="field-label" style="margin:0 8px 0 14px">Language</label>
+            <select id="advisory-lang"></select>
+          </div>
+        </div>
+        <p id="advisory-text" class="advisory-text muted">No advisory yet — press ▶ Run AI analysis above.</p>
+        <p class="hint">The chosen language is saved — it survives refreshes. New languages are
+          rendered once by the AI and cached.</p>
+      </section>
+
+      <section class="panel span-2 ana-panel" id="deepdive-panel">
+        <div class="panel-head">
+          <h2>Deep-dive — instances &amp; detailed AI review</h2>
+          <button id="details-btn" class="btn-primary slim">🔬 Generate deep-dive analysis</button>
+        </div>
+        <div id="details-body"><p class="muted">No deep-dive yet — runs after you start the analysis.</p></div>
+      </section>
+
+      <section class="panel span-2 ana-panel hidden" id="temporal-panel">
+        <h2>Congestion by time of day</h2>
+        <canvas id="temporalChart" height="90"></canvas>
+      </section>
+
+      <section class="panel challans span-2">
+        <div class="panel-head">
+          <h2>Enforcement — challan queue</h2>
+          <span class="badge" id="pending-badge">0 pending</span>
+        </div>
+        <p class="muted small">Challans are drafts — nothing is auto-issued; an officer approves or rejects each.</p>
+        <div id="challan-list"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    Real-time smart signals that cut waiting · AI that explains the cause and advises in your language · automatic violation flagging — every number comes from a live traffic simulation.
+  </footer>
+</body>
+</html>

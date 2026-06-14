@@ -1,0 +1,45 @@
+{
+  "junction_id": "C",
+  "scenarios": {
+    "offpeak": {
+      "time_context": "off-peak / late-night",
+      "avg_vehicle_wait_s": 19.72,
+      "avg_total_queue_veh": 6.37,
+      "peak_total_queue_veh": 16,
+      "dominant_axis": "EW",
+      "imbalance_ratio": 2.23,
+      "avg_pedestrian_delay_s": 61.57,
+      "peak_pedestrian_waiting": 4
+    },
+    "weekday": {
+      "time_context": "typical weekday daytime",
+      "avg_vehicle_wait_s": 102.2,
+      "avg_total_queue_veh": 44.74,
+      "peak_total_queue_veh": 85,
+      "dominant_axis": "EW",
+      "imbalance_ratio": 17.19,
+      "avg_pedestrian_delay_s": 48.97,
+      "peak_pedestrian_waiting": 4
+    },
+    "rush": {
+      "time_context": "weekday evening peak (approx. 6-8 PM)",
+      "avg_vehicle_wait_s": 132.36,
+      "avg_total_queue_veh": 62.29,
+      "peak_total_queue_veh": 102,
+      "dominant_axis": "EW",
+      "imbalance_ratio": 23.34,
+      "avg_pedestrian_delay_s": 41.0,
+      "peak_pedestrian_waiting": 4
+    },
+    "weekend": {
+      "time_context": "weekend daytime",
+      "avg_vehicle_wait_s": 118.99,
+      "avg_total_queue_veh": 70.09,
+      "peak_total_queue_veh": 114,
+      "dominant_axis": "EW",
+      "imbalance_ratio": 1.14,
+      "avg_pedestrian_delay_s": 40.68,
+      "peak_pedestrian_waiting": 7
+    }
+  }
+}

@@ -78,8 +78,13 @@ def compute_features(
     *,
     bucket_seconds: int = 300,
     max_steps: Optional[int] = None,
+    progress_cb: Optional[callable] = None,
 ) -> dict:
-    """Run `scenario` and return a structured feature dict for the Analyst."""
+    """Run `scenario` and return a structured feature dict for the Analyst.
+
+    `progress_cb(sim_time, total_queue)` (optional) is invoked every ~50 steps so
+    callers can stream live progress (used by the web app's analysis pipeline).
+    """
     loader.ensure_sumo_on_path()
     import traci
 
@@ -128,6 +133,8 @@ def compute_features(
             ped_wait.append(waiting)
             q_during["PED" if controller.current == "PED" else "VEH"].append(tot)
             step += 1
+            if progress_cb is not None and step % 50 == 0:
+                progress_cb(t, tot)
     finally:
         traci.close()
 

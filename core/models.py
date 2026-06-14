@@ -36,6 +36,15 @@ class RootCauseVerdict(BaseModel):
     confidence: float = Field(ge=0, le=1, description="confidence in this attribution, 0-1")
 
 
+class DetailedAnalysis(BaseModel):
+    """Deep-dive narrative the Analyst produces from concrete sim instances."""
+
+    diagnosis: str = Field(description="detailed multi-paragraph diagnosis of why the junction congests, citing the instances")
+    evidence: list[str] = Field(description="bullet points, each tying one concrete instance (time, queue, vehicle) to the diagnosis")
+    actions: list[str] = Field(description="numbered, concrete steps the authority should take, in priority order")
+    expected_outcome: str = Field(description="what changes after the fix, quantified from the benchmark when available")
+
+
 # --------------------------- Phase 4: enforcement ----------------------------
 class ViolationEvent(BaseModel):
     """A potential traffic violation flagged for enforcement review.

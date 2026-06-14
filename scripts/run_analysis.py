@@ -2,12 +2,12 @@
 """Run the root-cause analysis end-to-end and print the verdict.
 
 Pipeline:  SUMO run (fixed-time)  ->  computed features  ->  supervisor/Analyst
-(Gemini)  ->  structured root-cause verdict.
+(Claude)  ->  structured root-cause verdict.
 
 Usage:
     python scripts/run_analysis.py [scenario]      # default scenario: rush
 
-Requires GEMINI_API_KEY in .env (see .env.example).
+Requires ANTHROPIC_API_KEY in .env (see .env.example).
 """
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ def main() -> int:
     benchmark = _load_benchmark(scenario)
 
     try:
-        print("Invoking supervisor -> analyst (Gemini)...")
+        print("Invoking supervisor -> analyst (Claude)...")
         result = build_supervisor().invoke({"features": features, "benchmark": benchmark})
         verdict: RootCauseVerdict = result["verdict"]
         print_verdict(verdict, benchmark)
@@ -131,11 +131,11 @@ def main() -> int:
             _print_block("TEMPORAL PATTERN (off-peak / weekday / rush / weekend)", pattern)
 
     except LLMNotConfigured as exc:
-        print(f"\n⚠️  USER ACTION NEEDED — Gemini not configured: {exc}")
-        print("Add GEMINI_API_KEY to .env, then re-run this script.")
+        print(f"\n⚠️  USER ACTION NEEDED — AI not configured: {exc}")
+        print("Add ANTHROPIC_API_KEY to .env, then re-run this script.")
         return 3
     except LLMError as exc:
-        print(f"\n⚠️  USER ACTION NEEDED — Gemini call failed:\n    {exc}")
+        print(f"\n⚠️  USER ACTION NEEDED — AI call failed:\n    {exc}")
         return 4
     return 0
 

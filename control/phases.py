@@ -212,6 +212,12 @@ class PhasedController(Controller):
                 longest = max(longest, traci.person.getWaitingTime(p))
         return count, longest
 
+    def approach_signals(self) -> dict[str, str]:
+        """Current light colour per approach ('G'/'y'/'r') for visualization."""
+        green_group = {"NS": ("N", "S"), "EW": ("E", "W"), "PED": ()}[self.current]
+        colour = {"green": "G", "yellow": "y", "allred": "r"}[self._mode]
+        return {a: (colour if a in green_group else "r") for a in ("N", "S", "E", "W")}
+
     # --- policy (subclasses implement) ---
     def select_phase(self, sim_time: float) -> str:  # pragma: no cover - abstract
         raise NotImplementedError

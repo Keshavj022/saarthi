@@ -1,0 +1,16 @@
+{
+  "junction_id": "C",
+  "scenario": "rush",
+  "headline": "The East-West direction has 23 times the queue depth of the North-South direction, but the signal allocates equal green time to both, starving the dominant traffic flow.",
+  "primary_cause": "Signal timing mismatch with traffic demand – the fixed green-time split does not reflect the imbalanced arrival of vehicles from East and West.",
+  "cause_breakdown": {
+    "vehicles": 95.0,
+    "pedestrians": 5.0,
+    "parking": 0.0
+  },
+  "recommendation": "Switch the signal controller from fixed timing to adaptive (smart) signal control that adjusts green time continuously based on real-time queue detection. This will automatically give more green time to the heavily loaded East-West direction during peak periods, and rebalance when demand shifts. If adaptive control is not immediately available, manually reprogram the fixed signal to allocate roughly 70% of cycle time to East-West and 30% to North-South based on observed demand ratios.",
+  "expected_impact": "Adaptive signal control is expected to reduce average vehicle wait time by 44.6% (from 132.4 s to 73.3 s) and pedestrian delay by 7.3%, based on direct comparison with the current fixed-time performance at this junction during rush hour.",
+  "justification": "The directional imbalance ratio is 23.34: East-West average queue is 59.74 vehicles while North-South is only 2.56 vehicles. The per-approach breakdown shows E and W both at ~30 vehicles average (peak 50), while N and S are barely 1.3 vehicles each (peak 8). This extreme imbalance cannot be explained by pedestrian activity – pedestrians contribute only a 0.82 backup ratio and occupy just 20.2% of the cycle. The temporal profile shows sustained high queuing from minute 5 onwards (stable ~70 vehicles average for 60+ minutes), indicating chronic undersupply of green time on the dominant axis. No parking encroachment is reported. Pedestrian delay (41 s average) is far lower than vehicle wait (132.4 s), confirming vehicles are the constraint. The fixed signal is allocating green time equally to both axes, which is appropriate only when demand is balanced – it is not. Switching to adaptive control allows the system to detect the queue imbalance in real time and shift green-time allocation to match, clearing queues faster.",
+  "temporal_note": "Congestion onset is sharp at minute 5 (queue jumps from 23.5 to 56 vehicles) and remains severe and stable from minute 10 to minute 75, indicating a sustained rush-hour period with consistent directional imbalance. The queue clears rapidly after minute 80, showing demand relief, not signal improvement.",
+  "confidence": 0.95
+}

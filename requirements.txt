@@ -25,10 +25,10 @@ matplotlib>=3.8
 # ---- Tests ----
 pytest>=8.0
 
-# ---- Reasoning layer (Phase 2+): LangGraph + Gemini ----
+# ---- Reasoning layer (Phase 2+): LangGraph + Anthropic Claude ----
 langgraph>=0.2.0
 langchain-core>=0.3.0
-langchain-google-genai>=2.0.0
+langchain-anthropic>=0.3.0
 
 # ---- Perception (Phase 3): off-the-shelf YOLO + OCR. Heavy (pulls in torch) ----
 ultralytics>=8.2.0
@@ -37,6 +37,10 @@ opencv-python-headless>=4.9.0
 
 # ---- Dashboard (Phase 5) ----
 streamlit>=1.36.0
+
+# ---- Web app (custom frontend: FastAPI backend + canvas SPA) ----
+fastapi>=0.110
+uvicorn[standard]>=0.29
 
 # ---- RL Tier-2 (Phase 6, optional) ----
 # A custom Gymnasium env (control/rl/env.py) is used INSTEAD of sumo-rl so the RL
