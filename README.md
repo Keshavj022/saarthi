@@ -1,14 +1,3 @@
----
-title: Saarthi — Traffic Decision Support
-emoji: 🚦
-colorFrom: green
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
-short_description: Agentic traffic decision-support — adaptive signals + AI root-cause in SUMO
----
-
 <div align="center">
 
 # 🚦 Saarthi · सारथी
