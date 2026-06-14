@@ -41,6 +41,9 @@ function makeRenderer(cv) {
   const CARCOLORS = ["#e2e8f0", "#60a5fa", "#f472b6", "#fbbf24", "#34d399", "#a78bfa", "#fb923c", "#cbd5e1", "#22d3ee"];
   const TYPES = { c: { l: 4.8, w: 2.0 }, m: { l: 2.2, w: 0.95 }, b: { l: 11.0, w: 2.5 } };
   const carColor = (id) => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return CARCOLORS[h % CARCOLORS.length]; };
+  //: clothing tones so the crowd reads as varied individuals (waiting people are amber).
+  const PEDCOLORS = ["#8b5cf6", "#3b82f6", "#10b981", "#ec4899", "#14b8a6", "#ef798a", "#6366f1", "#0ea5e9", "#22c55e", "#f472b6"];
+  const pedColor = (id) => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PEDCOLORS[h % PEDCOLORS.length]; };
 
   //: per-layout identity kit (geometry differences live in computeGeom via arms).
   const STYLE = {
@@ -291,13 +294,18 @@ function makeRenderer(cv) {
     const sig = NET.kind === "roundabout" ? "ring" : (["N", "S", "E", "W"].filter((k) => A[k]).map((k) => A[k]).join("·") || "ring");
     const label = (NET.label || NET.name).toUpperCase();
     g.font = "600 13px ui-monospace, Menlo, monospace";
-    const tw = g.measureText(label).width, cw = tw + 52, ch = 24, cx = m + 8, cy = m + 8;
+    const tw = g.measureText(label).width;
+    g.font = "600 11px ui-monospace, Menlo, monospace";
+    const sw = g.measureText(sig).width;
+    const ch = 24, cx = m + 8, cy = m + 8, padL = 24, gap = 8, padR = 12;
+    const cw = padL + tw + gap + sw + padR;   // fit dot + label + spec, no overflow
     g.fillStyle = "rgba(11,17,32,.82)"; rr(g, cx, cy, cw, ch, 7); g.fill();
     g.strokeStyle = "rgba(56,189,248,.4)"; g.lineWidth = 1; g.stroke();
     g.fillStyle = PAL.accent; g.beginPath(); g.arc(cx + 13, cy + ch / 2, 3.4, 0, 6.3); g.fill();
-    g.fillStyle = "#e6edf6"; g.textBaseline = "middle"; g.fillText(label, cx + 24, cy + ch / 2 + 1);
+    g.font = "600 13px ui-monospace, Menlo, monospace";
+    g.fillStyle = "#e6edf6"; g.textBaseline = "middle"; g.fillText(label, cx + padL, cy + ch / 2 + 1);
     g.font = "600 11px ui-monospace, Menlo, monospace"; g.fillStyle = PAL.accent;
-    g.fillText(sig, cx + 24 + tw + 8, cy + ch / 2 + 1);
+    g.fillText(sig, cx + padL + tw + gap, cy + ch / 2 + 1);
     g.restore();
   }
 
@@ -435,24 +443,84 @@ function makeRenderer(cv) {
     }
   }
 
+  // A little top-down person: head + shoulders, oriented to the walking direction,
+  // varied clothing per id so the crowd reads as individuals. Waiting people turn
+  // amber and glow warm so a queue at the kerb is obvious (they want a WALK phase).
   function drawPed(p) {
-    const x = px(p.x), y = py(p.y);
-    ctx.fillStyle = "rgba(192,132,252,.30)"; ctx.beginPath(); ctx.arc(x, y, 5, 0, 6.3); ctx.fill();
-    ctx.fillStyle = "#c084fc"; ctx.beginPath(); ctx.arc(x, y, 2.7, 0, 6.3); ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 1; ctx.stroke();
+    const X = px(p.x), Y = py(p.y), waiting = p.w;
+    const s = Math.max(MPP * 0.5, 2.6);                     // world-scaled, floored
+    const th = (p.a || 0) * Math.PI / 180;
+    const ang = Math.atan2(-Math.cos(th), Math.sin(th));    // SUMO angle → canvas, forward=+x
+    // cast shadow on the ground (not rotated with the body)
+    ctx.fillStyle = "rgba(0,0,0,.30)";
+    ctx.beginPath(); ctx.ellipse(X + s * 0.5, Y + s * 1.0, s * 1.25, s * 0.6, 0, 0, 6.3); ctx.fill();
+    if (waiting) {                                          // warm halo for kerb queues
+      const gl = ctx.createRadialGradient(X, Y, 0, X, Y, s * 4);
+      gl.addColorStop(0, "rgba(251,191,36,.5)"); gl.addColorStop(1, "rgba(251,191,36,0)");
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = gl;
+      ctx.beginPath(); ctx.arc(X, Y, s * 4, 0, 6.3); ctx.fill(); ctx.restore();
+    }
+    ctx.save();
+    ctx.translate(X, Y); ctx.rotate(ang);
+    // shoulders — wider across the walking direction
+    ctx.fillStyle = waiting ? "#f59e0b" : pedColor(p.id);
+    ctx.beginPath(); ctx.ellipse(-s * 0.12, 0, s * 0.82, s * 1.12, 0, 0, 6.3); ctx.fill();
+    ctx.strokeStyle = "rgba(7,11,20,.5)"; ctx.lineWidth = Math.max(s * 0.16, 0.6); ctx.stroke();
+    // head — skin tone, set slightly forward so they read as walking
+    ctx.fillStyle = waiting ? "#fcd9a0" : "#eac4a0";
+    ctx.beginPath(); ctx.arc(s * 0.34, 0, s * 0.72, 0, 6.3); ctx.fill();
+    ctx.strokeStyle = "rgba(7,11,20,.4)"; ctx.lineWidth = Math.max(s * 0.13, 0.5); ctx.stroke();
+    // soft top highlight on the head
+    ctx.fillStyle = "rgba(255,255,255,.5)";
+    ctx.beginPath(); ctx.arc(s * 0.5, -s * 0.22, s * 0.22, 0, 6.3); ctx.fill();
+    ctx.restore();
+  }
+
+  // metered roundabout: a signal that gates each arm's entry onto the ring.
+  function roundaboutMeters(sig) {
+    const mr = NET.meter_r || 34, o = 3.5;
+    for (const a of Object.keys(NET.arms)) {
+      if (!sig[a]) continue;
+      const half = Math.max(NET.arms[a] || 1, 1) * LANE;
+      const c = SIGCOL[sig[a]] || SIGCOL.r, on = sig[a] !== "r";
+      let x1, y1, x2, y2, hx, hy;
+      if (a === "N") { x1 = -half; y1 = mr; x2 = half; y2 = mr; hx = half + o; hy = mr; }
+      else if (a === "S") { x1 = -half; y1 = -mr; x2 = half; y2 = -mr; hx = -half - o; hy = -mr; }
+      else if (a === "E") { x1 = mr; y1 = -half; x2 = mr; y2 = half; hx = mr; hy = -half - o; }
+      else { x1 = -mr; y1 = -half; x2 = -mr; y2 = half; hx = -mr; hy = half + o; }
+      if (on) {                                       // soft ground-glow under a moving entry
+        const gx = px((x1 + x2) / 2), gy = py((y1 + y2) / 2);
+        const gl = ctx.createRadialGradient(gx, gy, 0, gx, gy, 7 * MPP);
+        const col = sig[a] === "G" ? "34,197,94" : "250,204,21";
+        gl.addColorStop(0, `rgba(${col},.16)`); gl.addColorStop(1, `rgba(${col},0)`);
+        ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = gl;
+        ctx.beginPath(); ctx.arc(gx, gy, 7 * MPP, 0, 6.3); ctx.fill(); ctx.restore();
+      }
+      ctx.save(); ctx.strokeStyle = c; ctx.lineWidth = lw(0.55, 4); ctx.lineCap = "round";
+      ctx.shadowColor = c; ctx.shadowBlur = on ? 12 : 0;
+      ctx.beginPath(); ctx.moveTo(px(x1), py(y1)); ctx.lineTo(px(x2), py(y2)); ctx.stroke();
+      ctx.restore();
+      signalHead(hx, hy, sig[a]);
+    }
   }
 
   function drawScene(state) {
     ctx.drawImage(bg, 0, 0, W, H);
     if (NET.kind === "roundabout") {
+      roundaboutMeters(state.signals || {});
       for (const p of state.peds || []) drawPed(p);
       for (const v of state.vehicles || []) drawVehicle(v);
       return;
     }
     if (state.ped_phase) {
-      const { bx, by } = geom;
-      ctx.fillStyle = "rgba(192,132,252,.10)";
-      ctx.fillRect(px(-bx), py(by), 2 * bx * MPP, 2 * by * MPP);
+      // WALK phase — bathe the junction in a soft violet so it reads as
+      // "the crossings are open to pedestrians right now".
+      const { bx, by } = geom, r = Math.max(bx, by) * MPP * 1.7;
+      const wash = ctx.createRadialGradient(CX, CY, 0, CX, CY, r);
+      wash.addColorStop(0, "rgba(192,132,252,.20)");
+      wash.addColorStop(1, "rgba(192,132,252,0)");
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = wash;
+      ctx.beginPath(); ctx.arc(CX, CY, r, 0, 6.3); ctx.fill(); ctx.restore();
     }
     stopBars(state.signals || {});
     signalHeads(state.signals || {});
@@ -462,7 +530,8 @@ function makeRenderer(cv) {
 
   function setNetwork(desc) {
     NET = { name: desc.name, label: desc.label || desc.name, arms: desc.arms,
-            kind: desc.kind || "signal", ring_r: desc.ring_r || 22, style: desc.style || null };
+            kind: desc.kind || "signal", ring_r: desc.ring_r || 22,
+            meter_r: desc.meter_r || 34, style: desc.style || null };
     rebuildBackground();
   }
   function idle() {

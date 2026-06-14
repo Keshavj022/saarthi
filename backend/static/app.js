@@ -42,18 +42,13 @@ segmented("network", false, (v) => {
   AppState.network = v;
   const d = (window.NETWORK_DESCRIPTORS || {})[v];
   if (d) { Renderer.setNetwork(d); Renderer.idle(); $id("network-blurb").textContent = d.blurb || ""; }
-  // A roundabout has no signals: hide the signal-method picker + before/after
-  // toggle and force a single run; restore them for signalised layouts.
-  const round = !!(d && d.kind === "roundabout");
-  $id("simmode").classList.toggle("hidden", round);
-  if (round) {
-    const single = document.querySelector('#simmode button[data-val="single"]');
-    if (single && !single.classList.contains("on")) single.click();
-    $id("controller-row").classList.add("hidden");
-  } else {
-    const ab = document.querySelector('#simmode button[data-val="ab"]').classList.contains("on");
-    $id("controller-row").classList.toggle("hidden", ab);
-  }
+  // Every layout — including the metered roundabout — shows the full controls
+  // (mode / signal method / traffic mix). The signal-method picker is hidden only
+  // in A/B mode, which compares fixed-time vs adaptive directly.
+  $id("simmode").classList.remove("hidden");
+  $id("mix-row").classList.remove("hidden");
+  const ab = document.querySelector('#simmode button[data-val="ab"]').classList.contains("on");
+  $id("controller-row").classList.toggle("hidden", ab);
 });
 
 /* --------------- network catalogue + RL availability --------------- */
@@ -93,4 +88,20 @@ segmented("network", false, (v) => {
   if (controls) controls.addEventListener("click", () => {   // click the collapsed rail to reopen
     if (shell.classList.contains("params-collapsed")) setCollapsed(false);
   });
+})();
+
+/* --------------- challan queue sub-page (opened from Analysis, not a navbar tab) --------------- */
+(function () {
+  const showOnly = (id) =>
+    document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === id));
+  const card = $id("challan-card");
+  const back = $id("challans-back");
+  if (card) {
+    const open = () => { showOnly("view-challans"); window.scrollTo(0, 0); };
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  }
+  if (back) back.addEventListener("click", () => { showOnly("view-analysis"); window.scrollTo(0, 0); });
 })();

@@ -1,20 +1,3 @@
-"""Shared signal-phase machinery for the single junction.
-
-Both the fixed-time baseline and the max-pressure controller drive the same
-three logical phases, so the benchmark compares *policies* (how a phase is
-chosen), not different signal plans:
-
-  * NS  — vehicles on the North & South approaches get green (all else red),
-  * EW  — vehicles on the East & West approaches get green,
-  * PED — an exclusive pedestrian phase: all vehicles red, all crossings green.
-
-`classify()` discovers which TLS link indices belong to each phase at runtime
-(from `getControlledLinks`), so the code is not tied to a hand-counted signal
-state string. `PhasedController` implements the green→yellow→all-red→green state
-machine and re-asserts the desired light state every step (robust against SUMO's
-built-in program trying to advance underneath us). Subclasses implement only
-`select_phase()` — the decision policy.
-"""
 from __future__ import annotations
 
 import logging
@@ -34,10 +17,10 @@ class JunctionPhases:
 
     tls_id: str
     n_links: int
-    phase_idx: dict[str, list[int]]            # "NS"/"EW"/"PED" -> link indices
-    incoming_lanes: dict[str, list[str]]       # "NS"/"EW" -> vehicle approach lanes
-    walk_edges: list[str]                      # junction walking areas (:C_w*)
-    cross_edges: list[str]                     # junction crossings (:C_c*)
+    phase_idx: dict[str, list[int]]            
+    incoming_lanes: dict[str, list[str]]       
+    walk_edges: list[str]                      
+    cross_edges: list[str]                     
     _sets: dict[str, set[int]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -48,8 +31,6 @@ class JunctionPhases:
         return "".join(GREEN if i in on else RED for i in range(self.n_links))
 
     def yellow_state(self, phase: str) -> str:
-        """Yellow for the *vehicle* movements leaving green; crossings drop to red
-        (pedestrian clearance is handled by the following all-red interval)."""
         if phase == "PED":
             return RED * self.n_links
         on = self._sets[phase]
@@ -94,7 +75,7 @@ def classify(tls_id: str) -> JunctionPhases:
             walk.add(_edge_of(from_lane))
             walk.add(_edge_of(to_lane))
             continue
-        approach = from_lane.split("_")[0]  # 'N_in_1' -> 'N'
+        approach = from_lane.split("_")[0]  
         if approach in ("N", "S"):
             phase_idx["NS"].append(i)
             ns_lanes.add(from_lane)
@@ -127,13 +108,13 @@ class PhasedController(Controller):
     yellow_time: float = 3.0
     all_red_time: float = 2.0
     veh_min_green: float = 10.0
-    ped_min_green: float = 12.0  # enough time to walk across an arm
+    ped_min_green: float = 12.0  
 
     def __init__(self, tls_id: str) -> None:
         super().__init__(tls_id)
         self.phases: JunctionPhases | None = None
         self.current: str = "NS"
-        self._mode: str = "green"            # green | yellow | allred
+        self._mode: str = "green"            
         self._state: str = ""
         self._phase_start: float = 0.0
         self._mode_until: float = 0.0
@@ -166,10 +147,9 @@ class PhasedController(Controller):
             if sim_time >= self._mode_until:
                 self._begin_green(sim_time, self._pending or self.current)
 
-        # Re-assert the desired light state every step.
+        
         traci.trafficlight.setRedYellowGreenState(self.tls_id, self._state)
 
-    # --- transitions ---
     def _begin_yellow(self, t: float, nxt: str) -> None:
         self._state = self.phases.yellow_state(self.current)
         self._pending = nxt
@@ -188,7 +168,6 @@ class PhasedController(Controller):
         self._mode = "green"
         self._phase_start = t
 
-    # --- sensing helpers (shared) ---
     def vehicle_pressure(self, group: str) -> int:
         """Queued (halting) vehicles on a vehicle phase's incoming lanes."""
         import traci
@@ -218,6 +197,5 @@ class PhasedController(Controller):
         colour = {"green": "G", "yellow": "y", "allred": "r"}[self._mode]
         return {a: (colour if a in green_group else "r") for a in ("N", "S", "E", "W")}
 
-    # --- policy (subclasses implement) ---
-    def select_phase(self, sim_time: float) -> str:  # pragma: no cover - abstract
+    def select_phase(self, sim_time: float) -> str:  
         raise NotImplementedError

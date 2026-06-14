@@ -5,10 +5,14 @@
   const $ = (id) => document.getElementById(id);
   const COL = { fixed_time: "#f87171", max_pressure: "#38bdf8", rl: "#34d399" };
   const LBL = { fixed_time: "Fixed timer", max_pressure: "Smart adaptive", rl: "Self-learning AI" };
-  const NETLBL = { cross: "4-way", tee: "T-junction", asym: "Main road × side" };
-  const DASH = { cross: [], tee: [7, 5], asym: [2, 4] };
+  const NETLBL = { cross: "4-way", tee: "T-junction", asym: "Main road × side", highway: "Highway", boulevard: "Boulevard × cross-street" };
 
-  let ws = null, waitChart = null, pedChart = null, tlChart = null, running = false;
+  let ws = null, waitChart = null, pedChart = null, tlCharts = [], running = false;
+  const CT = window.ChartTheme;
+  const barBg = (c) => (CT ? CT.barFill(c) : c);
+  const lineFill = (c) => (CT ? CT.fadeFill(c, 0.14) : "transparent");
+  const ax = (o) => (CT ? CT.axes(o) : { x: {}, y: {} });
+  const BAR_ANIM = { duration: 850, easing: "easeOutQuart", delay: (c) => (c.type === "data" && c.mode === "default" ? c.dataIndex * 80 : 0) };
 
   const picked = (boxId) => [...document.querySelectorAll(`#${boxId} button.on`)].map((b) => b.dataset.val);
 
@@ -47,34 +51,58 @@
     const networks = [...new Set(results.map((r) => r.network))];
     const ctrls = [...new Set(results.map((r) => r.controller))];
     if (existing) existing.destroy();
-    const gcv = $(canvas); gcv.style.display = "block";
+    const gcv = $(canvas); gcv.parentElement.classList.add("on");
     return new Chart(gcv, {
       type: "bar",
       data: { labels: networks.map((n) => NETLBL[n]),
-        datasets: ctrls.map((c) => ({ label: LBL[c], backgroundColor: COL[c], borderRadius: 5,
+        datasets: ctrls.map((c) => ({ label: LBL[c], backgroundColor: barBg(COL[c]), hoverBackgroundColor: COL[c], maxBarThickness: 54,
           data: networks.map((n) => { const r = results.find((x) => x.network === n && x.controller === c); return r ? r.result[field] : null; }) })) },
-      options: { responsive: true, aspectRatio: 4, scales: {
-        x: { ticks: { color: "#e6edf6" }, grid: { display: false } },
-        y: { ticks: { color: "#8b98ad" }, grid: { color: "#1b2536" }, title: { display: true, text: title, color: "#8b98ad" } } },
-        plugins: { legend: { labels: { color: "#e6edf6" } } } },
+      options: { responsive: true, maintainAspectRatio: false, animation: BAR_ANIM,
+        scales: ax({ x: { grid: { display: false }, ticks: { color: "#e6edf6", font: { weight: "600" } } },
+          y: { title: { display: true, text: title, color: "#8b98ad" } } }) },
     });
   }
 
+  // one queue-over-time chart per layout — keeps each plot to ≤3 lines instead of
+  // cramming every controller × layout combo (and a 9-entry legend) into one panel.
   function timelines(results) {
-    if (tlChart) tlChart.destroy();
-    const xcv = $("exTimelineChart"); xcv.style.display = "block";
-    tlChart = new Chart(xcv, {
-      type: "line",
-      data: { datasets: results.map((r) => ({
-        label: `${LBL[r.controller]} · ${NETLBL[r.network]}`,
-        data: r.timeline.map((p) => ({ x: p.t, y: p.q })),
-        borderColor: COL[r.controller], borderDash: DASH[r.network] || [],
-        pointRadius: 0, borderWidth: 2, tension: 0.3 })) },
-      options: { responsive: true, animation: false, parsing: true, aspectRatio: 3.4, scales: {
-        x: { type: "linear", ticks: { color: "#8b98ad" }, grid: { color: "#1b2536" }, title: { display: true, text: "sim time (s)", color: "#8b98ad" } },
-        y: { ticks: { color: "#8b98ad" }, grid: { color: "#1b2536" }, title: { display: true, text: "total queue (veh)", color: "#8b98ad" } } },
-        plugins: { legend: { labels: { color: "#e6edf6", boxWidth: 18 } } } },
-    });
+    tlCharts.forEach((c) => c.destroy());
+    tlCharts = [];
+    const host = $("ex-timelines");
+    host.innerHTML = "";
+    const networks = [...new Set(results.map((r) => r.network))];
+    const single = networks.length === 1;
+    $("tl-empty").style.display = "none";
+    $("tl-hint").style.display = single ? "none" : "";
+
+    for (const n of networks) {
+      const rows = results.filter((r) => r.network === n);
+      const card = document.createElement("div");
+      card.className = "tl-card";
+      const title = document.createElement("h3");
+      title.className = "tl-title";
+      title.textContent = NETLBL[n];
+      const box = document.createElement("div");
+      box.className = "chartbox on";
+      box.style.setProperty("--ch", single ? "300px" : "240px");
+      const cv = document.createElement("canvas");
+      box.appendChild(cv);
+      card.appendChild(title);
+      card.appendChild(box);
+      host.appendChild(card);
+
+      tlCharts.push(new Chart(cv, {
+        type: "line",
+        data: { datasets: rows.map((r) => ({
+          label: LBL[r.controller],
+          data: r.timeline.map((p) => ({ x: p.t, y: p.q })),
+          borderColor: COL[r.controller], backgroundColor: lineFill(COL[r.controller]), fill: true,
+          pointRadius: 0, borderWidth: 2.5, tension: 0.38 })) },
+        options: { responsive: true, maintainAspectRatio: false, animation: { duration: 800, easing: "easeOutQuart" }, parsing: true,
+          scales: ax({ x: { type: "linear", ticks: { maxTicksLimit: 7 }, title: { display: true, text: "sim time (s)", color: "#8b98ad" } },
+            y: { beginAtZero: true, title: { display: true, text: "total queue (veh)", color: "#8b98ad" } } }) },
+      }));
+    }
   }
 
   function fmtDelta(d) {

@@ -1,12 +1,3 @@
-"""Detect real traffic violations from the simulation (for enforcement).
-
-This is NOT a hardcoded sample: it runs a short simulation in which a fraction of
-drivers over-speed (a realistic behaviour), watches the junction, and records the
-vehicles whose *measured* speed exceeds the limit. Each detected vehicle is a
-genuine instance from the simulation — the enforcement agent then drafts a challan
-for it. Number plates are synthesised from the vehicle id (we have no camera), but
-the violation and the speed are real, measured values.
-"""
 from __future__ import annotations
 
 import logging

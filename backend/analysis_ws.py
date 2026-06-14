@@ -1,12 +1,3 @@
-"""Live analysis pipeline over WebSocket.
-
-`/api/ws/analyze` runs the FULL reasoning pipeline for a scenario while the
-client watches: SUMO simulation (with streamed progress), computed diagnostic
-features, the AI root-cause verdict, and the advisory in the user's saved
-language. Each stage emits events so the UI can animate a pipeline stepper and
-a console. Results are persisted to the same artifact files the rest of the app
-reads (verdict.<scenario>.json, advisory.<scenario>.json).
-"""
 from __future__ import annotations
 
 import asyncio
@@ -31,7 +22,6 @@ def _run_pipeline(scenario: str, emit) -> None:
     from core.features import compute_features
     from core.llm import LLMError, LLMNotConfigured, render_in_language
 
-    # ---- stage 1+2: simulate + compute features ----
     emit({"type": "stage", "key": "sim", "status": "running"})
     emit({"type": "log", "message": f"Simulating the '{scenario}' junction with today's fixed-timer signal…"})
     last_logged = {"t": -600.0}
@@ -54,19 +44,13 @@ def _run_pipeline(scenario: str, emit) -> None:
           f"pattern found: {busy} traffic is far heavier — {heavy} vs {light} vehicles queued "
           f"({di['imbalance_ratio']}× as much); pedestrians are not the bottleneck"})
 
-    # The before/after benchmark is a pure-simulation result (no AI) — push it now so the
-    # Before/after panel + headline fill from the run itself, even if the AI is unavailable.
-    benchmark = data.load_benchmark()
+    benchmark = data.load_benchmark(scenario)
     if benchmark and benchmark.get("scenario") != scenario:
         benchmark = None
     emit({"type": "benchmark", "benchmark": benchmark, "overall": o})
 
-    # ---- stage 3: AI root-cause (resilient — pipeline continues if AI is down) ----
     emit({"type": "stage", "key": "verdict", "status": "running"})
     emit({"type": "log", "message": "AI is working out the root cause from the numbers…"})
-    # The live run always produces ENGLISH. The Analysis page's language dropdown
-    # translates the finished analysis on demand (POST /api/analysis/<scenario>/render),
-    # so the whole page stays in one language instead of a mid-run English/other mix.
     lang = "English"
 
     verdict = None
@@ -88,8 +72,6 @@ def _run_pipeline(scenario: str, emit) -> None:
               f"cause found: {cb.vehicles:.0f}% vehicle demand · {cb.pedestrians:.0f}% pedestrians · "
               f"{cb.parking:.0f}% parking  ({verdict.confidence:.0%} sure)"})
         emit({"type": "verdict", "verdict": json.loads(verdict.model_dump_json())})
-
-        # ---- stage 4: advisory in the saved language ----
         emit({"type": "stage", "key": "advisory", "status": "running"})
         english = advisory_text(verdict)
         adv_path = settings.outputs_dir / f"advisory.{scenario}.json"
@@ -106,7 +88,6 @@ def _run_pipeline(scenario: str, emit) -> None:
         emit({"type": "stage", "key": "advisory", "status": "done"})
         emit({"type": "advisory", "advisory": adv, "language": lang})
 
-    # ---- stage 5: enforcement — catch real violations, draft challans ----
     emit({"type": "stage", "key": "enforce", "status": "running"})
     emit({"type": "log", "message": "Watching the junction for traffic violations…"})
     try:

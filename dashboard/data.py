@@ -1,9 +1,3 @@
-"""Data access for the authority dashboard.
-
-Reads REAL pipeline outputs only — the benchmark, verdict, advisory, temporal and
-perception JSON written by the scripts, plus the challan queue from SQLite. No
-mocks, no streamlit here (kept import-clean and testable).
-"""
 from __future__ import annotations
 
 import json
@@ -23,7 +17,16 @@ def _load_json(name: str) -> Optional[dict]:
     return None
 
 
-def load_benchmark() -> Optional[dict]:
+def load_benchmark(scenario: Optional[str] = None) -> Optional[dict]:
+    """Per-scenario before/after benchmark, falling back to the global default.
+
+    `benchmark.<scenario>.json` is preferred so every scenario shows a real
+    before/after; `benchmark.json` is the legacy/default (rush) fallback.
+    """
+    if scenario:
+        per = _load_json(f"benchmark.{scenario}.json")
+        if per:
+            return per
     return _load_json("benchmark.json")
 
 

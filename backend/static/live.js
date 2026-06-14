@@ -26,6 +26,9 @@
     running = b; const btn = $("run");
     btn.textContent = b ? "■ Stop" : (mode === "ab" ? "▶ Run before vs after" : "▶ Run simulation");
     btn.classList.toggle("stop", b);
+    // while running, the layout / signal method / mode / traffic mix are locked
+    // (they only take effect at the start of a run, so editing them mid-run is misleading)
+    ["network", "controller", "simmode", "mix"].forEach((id) => { const el = $(id); if (el) el.classList.toggle("locked", b); });
   }
   function setMode(m) {
     mode = m;
@@ -45,16 +48,24 @@
   function initChart(datasets) {
     if (liveChart) liveChart.destroy();
     lastChartT = -10;
-    const lcv = $("liveChart"); lcv.style.display = "block";
+    const lcv = $("liveChart"); lcv.parentElement.classList.add("on");
+    const ax = (window.ChartTheme ? ChartTheme.axes({ x: { ticks: { maxTicksLimit: 6 } } })
+      : { x: {}, y: {} });
     liveChart = new Chart(lcv, {
       type: "line",
       data: { labels: [], datasets },
-      options: { responsive: true, animation: false, aspectRatio: 5, scales: {
-        x: { ticks: { color: "#8b98ad", maxTicksLimit: 6 }, grid: { color: "#1b2536" } },
-        y: { ticks: { color: "#8b98ad" }, grid: { color: "#1b2536" } } },
-        plugins: { legend: { labels: { color: "#e6edf6" } } } },
+      // live telemetry: instant streaming updates (per-point update('none')),
+      // but the points carry soft gradient fills for depth.
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        scales: ax,
+        plugins: { legend: { labels: { color: "#e6edf6" } } },
+      },
     });
   }
+  const TPAL = (window.ChartTheme && ChartTheme.PAL) ||
+    { sky: "#38bdf8", warn: "#fbbf24", bad: "#f87171", good: "#34d399" };
+  const fill = (c, top) => (window.ChartTheme ? ChartTheme.fadeFill(c, top) : "transparent");
 
   /* ---------------- interpolation ---------------- */
   function angLerp(a, b, al) { const d = ((b - a + 540) % 360) - 180; return a + d * al; }
@@ -67,7 +78,8 @@
     const pm = new Map(a.peds.map((p) => [p.id, p]));
     const peds = b.peds.map((pb) => {
       const pa = pm.get(pb.id);
-      return pa ? { x: pa.x + (pb.x - pa.x) * al, y: pa.y + (pb.y - pa.y) * al } : pb;
+      return pa ? { ...pb, x: pa.x + (pb.x - pa.x) * al, y: pa.y + (pb.y - pa.y) * al,
+        a: (pa.a != null && pb.a != null) ? angLerp(pa.a, pb.a, al) : pb.a } : pb;
     });
     return { ...b, vehicles, peds };
   }
@@ -179,8 +191,8 @@
   async function startSingle() {
     $("result").classList.add("hidden"); $("run-hint").textContent = "";
     initChart([
-      { label: "total queue", data: [], borderColor: "#38bdf8", backgroundColor: "rgba(56,189,248,.12)", fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 },
-      { label: "avg wait (s)", data: [], borderColor: "#fbbf24", pointRadius: 0, tension: 0.35, borderWidth: 2 },
+      { label: "vehicles queued", data: [], borderColor: TPAL.sky, backgroundColor: fill(TPAL.sky, 0.34), fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2.5 },
+      { label: "avg wait (s)", data: [], borderColor: TPAL.warn, backgroundColor: fill(TPAL.warn, 0.1), fill: true, pointRadius: 0, tension: 0.4, borderWidth: 2.5 },
     ]);
     sides = [{ buffer: [], renderer: Renderer, captionEl: null, label: "" }];
     simDone = false; setRunning(true); setConn("live");
@@ -224,8 +236,8 @@
         { buffer: b.buffer, renderer: abRenderers.B, captionEl: $("cap-B"), label: "AFTER · smart adaptive", result: b.result },
       ];
       initChart([
-        { label: "queue — fixed timer (before)", data: [], borderColor: "#f87171", pointRadius: 0, tension: 0.35, borderWidth: 2 },
-        { label: "queue — smart adaptive (after)", data: [], borderColor: "#34d399", pointRadius: 0, tension: 0.35, borderWidth: 2 },
+        { label: "queue — fixed timer (before)", data: [], borderColor: TPAL.bad, backgroundColor: fill(TPAL.bad, 0.16), fill: true, pointRadius: 0, tension: 0.4, borderWidth: 2.5 },
+        { label: "queue — smart adaptive (after)", data: [], borderColor: TPAL.good, backgroundColor: fill(TPAL.good, 0.16), fill: true, pointRadius: 0, tension: 0.4, borderWidth: 2.5 },
       ]);
       simDone = true;              // both buffers complete; play them out
       setConn("live");
@@ -247,6 +259,13 @@
   function compareWithPreset(preset) {
     if (running) stop();
     document.querySelector('.tab[data-view="live"]').click();
+    // A/B compares signals on vs off — a signal-free roundabout would make the
+    // before/after meaningless, so force a signalised layout first.
+    const desc = (window.NETWORK_DESCRIPTORS || {})[window.AppState.network];
+    if (!desc || desc.kind === "roundabout") {
+      const cross = document.querySelector('#network button[data-val="cross"]');
+      if (cross) cross.click();
+    }
     document.querySelectorAll("#simmode button").forEach((x) =>
       x.classList.toggle("on", x.dataset.val === "ab"));
     setMode("ab");

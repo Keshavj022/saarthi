@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Before/after benchmark: fixed-time vs max-pressure on the SAME scenario.
-
-Runs both controllers on one scenario, computes the % wait-time reduction (the
-project's headline number), prints a comparison, saves the raw results to
-data/outputs/benchmark.json, and renders a labeled bar chart to
-data/outputs/benchmark.png.
-
-Usage:
-    python scripts/run_benchmark.py [scenario]      # default scenario: rush
-"""
 from __future__ import annotations
 
 import argparse
@@ -118,9 +108,13 @@ def main() -> int:
         result["rl_wait_reduction_pct"] = round(pct_reduction(fixed.avg_wait_s, rl.avg_wait_s), 1)
         series.append(("RL (PPO, Tier-2)", rl, RL_COLOR))
 
-    json_path = settings.outputs_dir / "benchmark.json"
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.write_text(json.dumps(result, indent=2))
+    blob = json.dumps(result, indent=2)
+    settings.outputs_dir.mkdir(parents=True, exist_ok=True)
+    # Per-scenario file (so the dashboard shows a real before/after for EVERY
+    # scenario, not just rush) + the legacy global default used as a fallback.
+    json_path = settings.outputs_dir / f"benchmark.{scenario}.json"
+    json_path.write_text(blob)
+    (settings.outputs_dir / "benchmark.json").write_text(blob)
     png_path = render_chart(scenario, series, wait_red, ped_red,
                             settings.outputs_dir / "benchmark.png")
 

@@ -1,0 +1,14 @@
+
+eclipse-sumo>=1.27
+
+fastapi>=0.110
+uvicorn[standard]>=0.29
+
+pydantic>=2.7
+pydantic-settings>=2.3
+python-dotenv>=1.0
+numpy>=1.26
+
+langgraph>=0.2.0
+langchain-core>=0.3.0
+langchain-anthropic>=0.3.0

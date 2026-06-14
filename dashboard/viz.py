@@ -1,10 +1,3 @@
-"""Top-down junction schematic for the live-simulation tab.
-
-Draws the 4-arm junction with, per approach: a queue bar growing from the centre
-outward (length and colour reflect congestion), a signal light coloured by the
-current phase, and the queued-vehicle count. The centre shows the active phase
-(and a WALK state during the pedestrian phase) plus pedestrians waiting.
-"""
 from __future__ import annotations
 
 import matplotlib

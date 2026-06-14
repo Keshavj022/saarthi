@@ -1,18 +1,3 @@
-"""Gymnasium environment for the single junction (Tier-2 RL).
-
-Reuses the exact NS/EW/PED phase machinery from `control.phases` so a learned
-policy is directly comparable to the fixed-time and max-pressure controllers —
-the only difference is *how* the next phase is chosen.
-
-  * observation : [NS queue, EW queue, pedestrians waiting, phase one-hot(3)]
-  * action      : Discrete(3) -> target phase NS / EW / PED
-  * reward      : drop in TOTAL waiting time (vehicles + pedestrians) over the
-                  step (wait-shaped, not throughput) — pedestrians are weighted up
-                  so the policy can't cut vehicle wait by starving the walk phase,
-                  and stuck vehicles' accumulating wait penalises gridlock.
-
-HARD GUARDRAIL (project spec): single junction only.
-"""
 from __future__ import annotations
 
 import logging
@@ -86,9 +71,7 @@ class JunctionEnv(gym.Env):
                    and traci.person.getSpeed(p) < 0.3)
 
     def _total_wait(self) -> float:
-        """Total waiting time over vehicles AND pedestrians (pedestrians weighted
-        up so the policy can't minimise vehicle wait by starving the walk phase).
-        Stuck vehicles' waiting keeps accumulating here, so gridlock is penalised."""
+
         traci = self._traci()
         veh = sum(traci.vehicle.getWaitingTime(v) for v in traci.vehicle.getIDList())
         ped = sum(traci.person.getWaitingTime(p) for p in traci.person.getIDList())
@@ -108,7 +91,6 @@ class JunctionEnv(gym.Env):
                 break
             traci.simulationStep()
 
-    # --- gym API ---
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         self._close()

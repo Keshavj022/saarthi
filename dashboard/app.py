@@ -1,16 +1,3 @@
-"""Saarthi — authority dashboard (Streamlit).
-
-Two tabs:
-  • Live Simulation — change demand/controller and watch the junction respond in
-    real time (queues per approach, signal phase, pedestrians) with streaming
-    metrics. Powered by SUMO via `sim.live`.
-  • Analysis & Enforcement — the story from real pipeline outputs: before/after
-    benchmark, root-cause verdict, English/Hindi advisory, and the human-review
-    challan queue.
-
-Run:  streamlit run dashboard/app.py
-Nothing is mocked; state is session + SQLite + data/outputs (no browser storage).
-"""
 from __future__ import annotations
 
 import sys

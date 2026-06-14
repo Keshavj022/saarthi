@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Train the Tier-2 RL signal controller and evaluate it vs the other controllers.
-
-Trains a PPO policy on the single-junction env, saves it, then runs the SAME
-scenario under fixed-time, max-pressure and the trained policy and reports the
-average vehicle wait. Per the project guardrail: if RL does not beat max-pressure
-it is NOT promoted — max-pressure stays the headline.
-
-Usage:
-    python scripts/train_rl.py [--timesteps 20000] [--scenario rush] [--episode-seconds 1800]
-"""
 from __future__ import annotations
 
 import argparse

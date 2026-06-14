@@ -1,13 +1,3 @@
-"""Parking-encroachment detection (Phase 6 optional).
-
-Separates stationary from moving vehicles by tracking them across frames: a
-vehicle whose centre barely moves while it's observed for several seconds is
-treated as parked/stopped — illegal parking that narrows a lane and feeds the
-Analyst as a third root-cause factor (alongside vehicles and pedestrians).
-
-`classify_tracks` is pure and unit-tested. The video path (`ParkingDetector`)
-reuses YOLO tracking and is a POC documented as footage-deferred.
-"""
 from __future__ import annotations
 
 import logging
@@ -36,15 +26,7 @@ def classify_tracks(
     move_threshold_px: float = 15.0,
     min_frames: int = 50,
 ) -> ParkingReport:
-    """Classify vehicle tracks as stationary (parked) vs moving.
-
-    Args:
-        tracks: track_id -> list of (frame_idx, centre_x, centre_y).
-        move_threshold_px: max centre displacement (bbox of positions) to count
-            as stationary. Scale to your footage resolution.
-        min_frames: a track must be observed at least this many frames to judge
-            (avoids flagging vehicles merely passing through).
-    """
+    
     stationary: list[int] = []
     moving: list[int] = []
     for tid, pts in tracks.items():
@@ -63,11 +45,6 @@ def classify_tracks(
 
 
 class ParkingDetector:
-    """Video path: track vehicles with YOLO, then classify stationary vs moving.
-
-    POC — accuracy depends on a steady camera and legible scene. Documented as
-    footage-deferred (no sample footage yet).
-    """
 
     def __init__(self, model_name: str = "yolov8n.pt", conf: float = 0.3) -> None:
         from ultralytics import YOLO

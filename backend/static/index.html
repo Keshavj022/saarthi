@@ -3,16 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080b13" />
   <title>Saarthi — Traffic Authority Decision Support</title>
-  <link rel="stylesheet" href="/styles.css?v=7" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23080b13'/%3E%3Crect x='11' y='4' width='10' height='24' rx='5' fill='none' stroke='%232dd4bf' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='10' r='2.4' fill='%23f87171'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23fbbf24'/%3E%3Ccircle cx='16' cy='22' r='2.4' fill='%2334d399'/%3E%3C/svg%3E" />
+  <link rel="preload" href="/vendor/fonts/bricolage-800.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/vendor/fonts/plexmono-500.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css?v=16" />
   <script src="/vendor/chart.umd.min.js" defer></script>
-  <script src="/render.js?v=7" defer></script>
-  <script src="/live.js?v=7" defer></script>
-  <script src="/experiments.js?v=7" defer></script>
-  <script src="/analysis.js?v=7" defer></script>
-  <script src="/app.js?v=7" defer></script>
+  <script src="/chart-theme.js?v=16" defer></script>
+  <script src="/render.js?v=16" defer></script>
+  <script src="/live.js?v=16" defer></script>
+  <script src="/experiments.js?v=16" defer></script>
+  <script src="/analysis.js?v=16" defer></script>
+  <script src="/app.js?v=16" defer></script>
 </head>
 <body>
+  <div class="bg-grid" aria-hidden="true"></div>
   <header class="topbar">
     <div class="brand">
       <span class="logo">◈</span>
@@ -68,10 +74,12 @@
             </div>
           </div>
 
-          <label class="field-label">Traffic mix</label>
-          <div class="segmented" id="mix">
-            <button data-val="cars" class="on">Cars only</button>
-            <button data-val="mixed">Mixed (cars·bikes·buses)</button>
+          <div id="mix-row">
+            <label class="field-label">Traffic mix</label>
+            <div class="segmented" id="mix">
+              <button data-val="cars" class="on">Cars only</button>
+              <button data-val="mixed">Mixed (cars·bikes·buses)</button>
+            </div>
           </div>
 
           <div class="slider">
@@ -155,7 +163,7 @@
 
         <section class="panel live-chart">
           <h2>Queue &amp; wait over time</h2>
-          <canvas id="liveChart"></canvas>
+          <div class="chartbox" style="--ch:200px"><canvas id="liveChart"></canvas></div>
         </section>
       </div>
 
@@ -216,19 +224,21 @@
       <p class="hint" id="ex-note"></p>
     </section>
 
+    <div class="ex-results">
     <section class="panel">
       <h2>Average vehicle wait by layout</h2>
-      <canvas id="exWaitChart"></canvas>
+      <div class="chartbox" style="--ch:230px"><canvas id="exWaitChart"></canvas></div>
       <h2 style="margin-top:18px">Average pedestrian delay</h2>
-      <canvas id="exPedChart"></canvas>
+      <div class="chartbox" style="--ch:230px"><canvas id="exPedChart"></canvas></div>
       <p class="chart-empty" id="ex-empty">▶ Run a comparison to see vehicle-wait and pedestrian-delay charts by layout.</p>
     </section>
 
     <section class="panel">
       <h2>Queue over time</h2>
-      <canvas id="exTimelineChart"></canvas>
-      <p class="hint">Solid = 4-way · dashed = T-junction · dotted = main road × side.
-        Colour = signal method. A flat line means the junction stays clear.</p>
+      <div id="ex-timelines" class="tl-grid"></div>
+      <p class="chart-empty" id="tl-empty">▶ Run a comparison to see one queue-over-time chart per layout.</p>
+      <p class="hint" id="tl-hint" style="display:none">One chart per junction layout · colour = signal method.
+        A flat line means the junction stays clear.</p>
     </section>
 
     <section class="panel span-3">
@@ -242,6 +252,7 @@
         <tbody></tbody>
       </table></div>
     </section>
+    </div>
   </main>
 
   <!-- ========================== ANALYSIS ========================== -->
@@ -295,7 +306,7 @@
           <span class="src-badge" id="b-bench"></span>
         </div>
         <div class="metric-row" id="bench-metrics"></div>
-        <canvas id="benchmarkChart" height="120"></canvas>
+        <div class="chartbox" style="--ch:220px"><canvas id="benchmarkChart"></canvas></div>
       </section>
 
       <div class="verdict-row">
@@ -308,7 +319,7 @@
         </section>
         <section class="panel ana-panel" id="panel-cause">
           <h2>Attribution</h2>
-          <canvas id="causeChart"></canvas>
+          <div class="chartbox" style="--ch:240px"><canvas id="causeChart"></canvas></div>
         </section>
       </div>
 
@@ -336,18 +347,36 @@
 
       <section class="panel span-2 ana-panel hidden" id="temporal-panel">
         <h2>Congestion by time of day</h2>
-        <canvas id="temporalChart" height="90"></canvas>
+        <div class="chartbox" style="--ch:200px"><canvas id="temporalChart"></canvas></div>
       </section>
 
-      <section class="panel challans span-2">
+      <section class="panel challan-card" id="challan-card" role="button" tabindex="0"
+               aria-label="Open the enforcement challan queue">
+        <div class="cc-left">
+          <h2>Enforcement — challan queue</h2>
+          <p class="muted small">Drafted violation notices awaiting an officer's review — nothing is auto-issued.</p>
+        </div>
+        <div class="cc-right">
+          <span class="badge" id="pending-badge">0 pending</span>
+          <span class="cc-go">Open queue →</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ===================== CHALLAN QUEUE (sub-page, not in the navbar) ===================== -->
+  <main id="view-challans" class="view">
+    <div class="challans-page">
+      <button class="btn-back" id="challans-back">← Back to analysis</button>
+      <section class="panel challans">
         <div class="panel-head">
           <h2>Enforcement — challan queue</h2>
-          <span class="badge" id="pending-badge">0 pending</span>
+          <span class="badge" id="challans-count">0 pending</span>
         </div>
         <p class="muted small">Challans are drafts — nothing is auto-issued; an officer approves or rejects each.</p>
-        <div id="challan-list"></div>
+        <div id="challan-list"><p class="muted">No violations flagged yet. Run the AI analysis on the previous page — it watches the junction and drafts a challan for any vehicle it catches over-speeding.</p></div>
       </section>
-
     </div>
   </main>
 

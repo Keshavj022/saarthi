@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""Demo flow — ensure all real pipeline outputs exist, then point at the dashboard.
-
-Runs only what's missing (idempotent): benchmark -> analysis (verdict + Hindi
-advisory) -> enforcement (a drafted challan). Then prints the demo narrative and
-the command to launch the authority dashboard.
-
-Usage:
-    python scripts/run_demo.py
-"""
 from __future__ import annotations
 
 import subprocess

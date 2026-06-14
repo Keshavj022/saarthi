@@ -1,14 +1,3 @@
-"""Multiple junction topologies for Saarthi's live simulations & experiments.
-
-Each network is defined programmatically (arms + lanes per direction) and built
-on demand with netconvert (sidewalks + signalized crossings, like the Phase-1
-junction). All networks keep the controlled junction "C" at the ORIGIN
-(`--offset.disable-normalization`), so positions stream to the renderer in a
-common coordinate frame centred on (0, 0).
-
-The Phase-1 benchmark network (`intersection.net.xml`, normalised coords) is
-untouched — these nets serve the interactive web app only.
-"""
 from __future__ import annotations
 
 import logging
@@ -23,10 +12,8 @@ log = logging.getLogger(__name__)
 ARM_LEN = 200.0
 ARM_COORD = {"N": (0, ARM_LEN), "S": (0, -ARM_LEN), "E": (ARM_LEN, 0), "W": (-ARM_LEN, 0)}
 RING_R = 22.0  # roundabout ring radius (world metres); shared with the renderer
+METER_R = 34.0  # radius of the roundabout's entry meter signals (just outside the ring)
 
-#: name -> {label, blurb, arms: {arm letter -> lanes per direction}, kind?}
-#: kind defaults to "signal" (TLS-controlled junction). "roundabout" builds a
-#: signal-free circulating ring and is driven without a controller.
 NETWORKS: dict[str, dict] = {
     "cross": {
         "label": "4-way crossroads",
@@ -55,7 +42,7 @@ NETWORKS: dict[str, dict] = {
     },
     "roundabout": {
         "label": "Roundabout",
-        "blurb": "Signal-free 4-arm roundabout — traffic yields on entry and circulates, no stops.",
+        "blurb": "Metered 4-arm roundabout — cars circulate the ring while signals meter each entry, so the signal method matters here too.",
         "arms": {"N": 1, "S": 1, "E": 1, "W": 1},
         "kind": "roundabout",
     },
@@ -97,14 +84,14 @@ _RING_COORD = {"RN": (0, RING_R), "RE": (RING_R, 0), "RS": (0, -RING_R), "RW": (
 # Each ring edge carries a curved `shape` tracing its 90° arc, so the ROAD is a
 # smooth circle of radius RING_R (not a 4-sided diamond) and cars circulate on it.
 _RING_SEQ = [("RN", "RE", 90, 0), ("RE", "RS", 0, -90), ("RS", "RW", -90, -180), ("RW", "RN", -180, -270)]
+# entry meter nodes (one per arm, just outside the ring); all share TLS "C" so a
+# single controller meters every entry — a signalised ("metered") roundabout.
+_METER_NODE = {"N": "MN", "E": "ME", "S": "MS", "W": "MW"}
+_METER_COORD = {"MN": (0, METER_R), "ME": (METER_R, 0), "MS": (0, -METER_R), "MW": (-METER_R, 0)}
 
 
 def _arc_shape(a0_deg: float, a1_deg: float, n: int = 16) -> str:
-    """`shape` points along the circular arc from a0 to a1 (degrees) at radius RING_R.
 
-    16 segments (17 points) per 90° quarter keeps the carriageway smoothly round even
-    after netconvert trims the junction areas. Comma-no-space within a point, space
-    between points (a space after the comma breaks SUMO's shape parser)."""
     pts = []
     for i in range(n + 1):
         a = math.radians(a0_deg + (a1_deg - a0_deg) * i / n)
@@ -120,6 +107,10 @@ def _round_nod_xml(name: str) -> str:
     for a in arms:
         x, y = ARM_COORD[a]
         nodes.append(f'    <node id="{a}" x="{x:.0f}" y="{y:.0f}" type="priority"/>')
+        mn = _METER_NODE[a]
+        mx, my = _METER_COORD[mn]
+        nodes.append(f'    <node id="{mn}" x="{mx:.1f}" y="{my:.1f}" '
+                     f'type="traffic_light" tl="C"/>')
     return ('<?xml version="1.0" encoding="UTF-8"?>\n<nodes>\n'
             + "\n".join(nodes) + "\n</nodes>\n")
 
@@ -129,8 +120,12 @@ def _round_edg_xml(name: str) -> str:
     edges = []
     for a, lanes in arms.items():
         rn = _RING_NODE[a]
-        edges.append(f'    <edge id="{a}_in"  from="{a}" to="{rn}" numLanes="{lanes}" '
+        mn = _METER_NODE[a]
+        # approach -> entry meter (TLS "C") -> ring node; the meter gates entry.
+        edges.append(f'    <edge id="{a}_in" from="{a}" to="{mn}" numLanes="{lanes}" '
                      f'speed="13.89" priority="3"/>')
+        edges.append(f'    <edge id="{a}_r"  from="{mn}" to="{rn}" numLanes="{lanes}" '
+                     f'speed="11.0" priority="3"/>')
         edges.append(f'    <edge id="{a}_out" from="{rn}" to="{a}" numLanes="{lanes}" '
                      f'speed="13.89" priority="3"/>')
     for i, (u, v, a0, a1) in enumerate(_RING_SEQ):
@@ -166,8 +161,9 @@ def build(name: str, force: bool = False) -> Path:
     edg = gen / f"{name}.edg.xml"
     netconvert = loader._binary("netconvert")
     if kind_of(name) == "roundabout":
-        # Signal-free circulating ring: no TLS, no crossings (vehicle-only demo).
-        # netconvert detects the one-way loop and sets yield-on-entry priorities.
+        # Metered ("signalised") roundabout: cars circulate the ring, but a single
+        # TLS "C" meters every entry (shared by the four meter nodes), so the same
+        # controllers (fixed/adaptive/RL) drive it. No crossings (vehicle-only demo).
         nod.write_text(_round_nod_xml(name))
         edg.write_text(_round_edg_xml(name))
         cmd = [
@@ -175,6 +171,7 @@ def build(name: str, force: bool = False) -> Path:
             "--node-files", str(nod),
             "--edge-files", str(edg),
             "--output-file", str(out),
+            "--tls.default-type", "static",           # the entry meters are signalised
             "--roundabouts.guess", "true",            # belt-and-suspenders with the explicit element
             "--no-turnarounds", "true",
             "--offset.disable-normalization", "true",  # keep junction centred at (0,0)
@@ -212,4 +209,5 @@ def descriptor(name: str) -> dict:
          "arms": meta["arms"], "arm_len": ARM_LEN, "kind": kind_of(name)}
     if kind_of(name) == "roundabout":
         d["ring_r"] = RING_R
+        d["meter_r"] = METER_R
     return d

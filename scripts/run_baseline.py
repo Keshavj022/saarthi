@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Run the fixed-time baseline scenario and print + save its metrics.
-
-Usage:
-    python scripts/run_baseline.py
-
-Requires SUMO installed and SUMO_HOME set (see README). On a fresh checkout this
-also builds the SUMO network from its inputs on first run.
-"""
 from __future__ import annotations
 
 import logging

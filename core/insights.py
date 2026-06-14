@@ -1,12 +1,3 @@
-"""Deep-dive analysis: concrete congestion instances + an AI detailed narrative.
-
-`build_detailed_report(scenario)` runs the scenario once under the fixed-time
-baseline and extracts *instances* a human can point at — the worst congestion
-episodes (with wall-clock times), the longest-suffering vehicles, the pedestrian
-peak — then asks the AI for a detailed diagnosis grounded in those instances.
-
-The pure helpers (`top_episodes`, `sim_clock`) are unit-testable without SUMO.
-"""
 from __future__ import annotations
 
 import logging

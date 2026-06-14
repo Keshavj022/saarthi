@@ -1,17 +1,3 @@
-"""Parameterized live simulation engine for the web app.
-
-Builds a demand profile from dashboard parameters (vehicle rates per axis,
-pedestrian rate, traffic mix) on a chosen junction topology (`sim.network_defs`),
-runs the chosen controller via TraCI, and exposes three consumption styles:
-
-  * `steps()`         — coarse per-step state (queues, phase, running wait),
-  * `stream_frames()` — rich frames with per-vehicle positions for the canvas,
-  * `run_combo()`     — headless batch run -> (final metrics, queue timeline),
-                        used by the Experiments view.
-
-Final metrics always come from SUMO's tripinfo. Kept independent of any UI so it
-can be tested headless.
-"""
 from __future__ import annotations
 
 import logging
@@ -57,7 +43,7 @@ class LiveConfig:
     mix: str = "cars"                     # 'cars' | 'mixed'
     ew_vph: int = 650                     # E-W through volume per direction
     ns_vph: int = 220                     # N-S through volume per direction
-    ped_per_hour: int = 240               # total pedestrians/hour across crossings
+    ped_per_hour: int = 240               # pedestrians/hour per crossing approach (per arm)
     duration: int = 480                   # simulated seconds of demand
     seed: int = 42
 
@@ -129,15 +115,27 @@ def _flow_lines(cfg: LiveConfig, arms: dict[str, int]) -> list[str]:
 
 
 def _ped_lines(cfg: LiveConfig, arms: dict[str, int]) -> list[str]:
-    pairs = [(a, b) for a in arms for b in arms if a != b]
-    if not pairs or cfg.ped_per_hour <= 0:
+
+    arm_list = list(arms)
+    if len(arm_list) < 2 or cfg.ped_per_hour <= 0:
         return []
-    per = max(cfg.ped_per_hour // len(pairs), 1)
-    return [
-        f'    <personFlow id="p{k}" type="ped" begin="0" end="{cfg.duration}" '
-        f'perHour="{per}"><walk from="{a}_in" to="{b}_out"/></personFlow>'
-        for k, (a, b) in enumerate(pairs)
-    ]
+    # Spawn ~20 m back from the junction so people walk straight into frame. Must
+    # stay safely below the netconvert-trimmed sidewalk length (≈ ARM_LEN minus the
+    # junction radius, ~10 m), so ARM_LEN-20 keeps a comfortable margin on every net.
+    near = max(network_defs.ARM_LEN - 20.0, 20.0)
+    rate = max(cfg.ped_per_hour, 1)
+    lines: list[str] = []
+    for k, a in enumerate(arm_list):
+        opp = OPPOSITE.get(a)
+        dest = opp if opp in arms else next(b for b in arm_list if b != a)
+        # NOTE: departPos must sit on the <personFlow>, not the <walk> — SUMO
+        # ignores it on the walk stage and people then spawn at the far arm end
+        # (off-camera). On the flow it places them near the junction as intended.
+        lines.append(
+            f'    <personFlow id="p{a}" type="ped" begin="0" end="{cfg.duration}" '
+            f'perHour="{rate}" departPos="{near:.1f}"><walk from="{a}_in" '
+            f'to="{dest}_out"/></personFlow>')
+    return lines
 
 
 def _routes_xml(cfg: LiveConfig) -> str:
@@ -167,11 +165,9 @@ class LiveSim:
         route_path = settings.outputs_dir / "_live.rou.xml"
         route_path.write_text(_routes_xml(self.cfg))
         self._tripinfo = settings.outputs_dir / "_live.tripinfo.xml"
-        if network_defs.kind_of(self.cfg.network) == "roundabout":
-            from control.null_controller import NullController
-            controller = NullController(TLS_ID)   # no signals — vehicles circulate
-        else:
-            controller = make_controller(self.cfg.controller)
+        # The roundabout is now metered (a shared TLS "C" gates each entry), so it
+        # runs under the chosen controller just like any signalised junction.
+        controller = make_controller(self.cfg.controller)
         cmd = [
             loader._binary("sumo"), "-n", str(net), "-r", str(route_path),
             "--step-length", "1", "--seed", str(self.cfg.seed),
@@ -258,7 +254,9 @@ class LiveSim:
                 peds = []
                 for p in traci.person.getIDList():
                     x, y = traci.person.getPosition(p)
-                    peds.append({"id": p, "x": round(x, 1), "y": round(y, 1)})
+                    peds.append({"id": p, "x": round(x, 1), "y": round(y, 1),
+                                 "a": round(traci.person.getAngle(p), 1),
+                                 "w": 1 if traci.person.getSpeed(p) < 0.3 else 0})
 
                 total_q = sum(traci.lane.getLastStepHaltingNumber(l)
                               for lanes in approach_lanes.values() for l in lanes)
@@ -295,10 +293,6 @@ class LiveSim:
 def run_combo(network: str, controller: str, *, ew: int, ns: int, ped: int,
               duration: int, mix: str = "cars",
               sample_every: float = 5.0) -> tuple[dict, list[dict]]:
-    """Headless batch run for the Experiments view.
-
-    Returns (final metrics dict, downsampled queue/wait timeline).
-    """
     cfg = LiveConfig(controller=controller, network=network, mix=mix,
                      ew_vph=ew, ns_vph=ns, ped_per_hour=ped, duration=duration)
     sim = LiveSim(cfg)

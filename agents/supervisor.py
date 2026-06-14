@@ -1,14 +1,3 @@
-"""LangGraph supervisor — the slow reasoning layer's coordinator.
-
-Holds shared analysis state and routes it to the right agent(s):
-
-    START ──▶ analyst ──▶ enforcement ──▶ END
-          └─(no features)─┘ └─(no violation)─┘
-
-The Analyst runs when simulation `features` are present; the Enforcement agent
-runs when a `violation_event` is present. Either, both, or neither — the
-conditional edges make the graph the single extension point for more agents.
-"""
 from __future__ import annotations
 
 import logging

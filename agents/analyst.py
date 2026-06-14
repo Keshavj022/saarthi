@@ -1,10 +1,3 @@
-"""Root-cause Analyst agent — the spine of Saarthi.
-
-Takes the COMPUTED feature dict (from `core.features`) plus the optional
-fixed-time-vs-adaptive benchmark, and returns a structured `RootCauseVerdict`:
-why the junction congests, attribution across factors, and what the authority
-should do. It reasons over the supplied numbers — it does not see raw logs.
-"""
 from __future__ import annotations
 
 import json
@@ -62,8 +55,7 @@ def build_prompt(features: dict, benchmark: dict | None,
 
 
 def advisory_text(verdict) -> str:
-    """A short, plain-language advisory built from a verdict — the thing we render
-    into Hindi (or another language) for the authority."""
+
     return (
         f"Junction {verdict.junction_id}: {verdict.headline} "
         f"Recommended action: {verdict.recommendation} "
@@ -72,12 +64,7 @@ def advisory_text(verdict) -> str:
 
 
 def translate_verdict(verdict: RootCauseVerdict, language: str) -> RootCauseVerdict:
-    """Return the verdict with its human-readable text translated into `language`.
 
-    Numbers (cause_breakdown, confidence) and identifiers are kept exactly the same —
-    only the prose fields are translated — so the whole Analysis page can render in
-    one language without re-running the simulation.
-    """
     if language.strip().lower() == "english":
         return verdict
     prompt = (

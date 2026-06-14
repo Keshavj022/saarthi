@@ -1,16 +1,3 @@
-"""Run a SUMO scenario under a controller and record wait-time / queue metrics.
-
-`run_scenario` is the one entry point that drives a TraCI simulation. The pure
-aggregation helpers (`aggregate_queue`, `summarize_tripinfo`) are kept separate
-and side-effect-free so they can be unit-tested without SUMO installed.
-
-Metrics recorded:
-  * avg_wait_s        — mean per-vehicle total waiting time (from SUMO tripinfo),
-                        the headline before/after number.
-  * avg_queue / peak  — mean and max number of halting vehicles on the junction's
-                        incoming lanes, sampled every step.
-  * avg_travel_time_s — mean per-vehicle trip duration (context for the wait).
-"""
 from __future__ import annotations
 
 import json

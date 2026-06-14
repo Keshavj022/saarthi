@@ -1,15 +1,3 @@
-"""SUMO glue for Saarthi.
-
-Single home for the SUMO-specific plumbing:
-  * put `$SUMO_HOME/tools` on `sys.path` so `traci` / `sumolib` import,
-  * build the `.net.xml` from the node/edge inputs via `netconvert`,
-  * resolve scenario `.sumocfg` files,
-  * assemble the SUMO start command for a TraCI run,
-  * list a junction's incoming (controlled) lanes.
-
-`traci`/`sumolib` are imported lazily inside functions so the rest of the code
-base imports and unit-tests cleanly even when SUMO is not installed.
-"""
 from __future__ import annotations
 
 import logging

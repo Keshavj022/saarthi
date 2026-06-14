@@ -1,20 +1,9 @@
-"""Pydantic data models for Saarthi's reasoning layer.
-
-Phase 2: the root-cause verdict the Analyst produces.
-Phase 4: the violation event + challan draft the Enforcement agent produces.
-"""
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
 
 class CauseBreakdown(BaseModel):
-    """Percent attribution of the junction's congestion to each factor.
-
-    The three should add up to roughly 100. `parking` (illegal parking /
-    lane-narrowing) is not yet measured in simulation (Phase 6), so it is
-    normally 0 unless perception data says otherwise.
-    """
 
     vehicles: float = Field(ge=0, le=100, description="share due to vehicle demand / signal split")
     pedestrians: float = Field(ge=0, le=100, description="share due to pedestrian crossing activity")

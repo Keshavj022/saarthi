@@ -1,15 +1,3 @@
-"""Thin Claude (Anthropic) client wrapper for Saarthi's reasoning layer.
-
-Centralises model construction (one place reads the key from settings) and offers
-three entry points used across the agents:
-
-  * `chat()`        — free-text completion,
-  * `structured()`  — completion forced into a pydantic schema (reliable parsing),
-  * `render_in_language()` — render text into an Indian language (Phase 4).
-
-Raises `LLMNotConfigured` with a clear message if the API key is absent, so
-callers (scripts) can fail gracefully instead of deep inside langchain.
-"""
 from __future__ import annotations
 
 import logging

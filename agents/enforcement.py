@@ -1,13 +1,3 @@
-"""Enforcement agent — drafts challans for human review (Phase 4).
-
-Given a flagged `ViolationEvent` (a plate + context), it judges whether the event
-is a genuine, citable violation, assembles evidence, proposes a fine, and drafts a
-challan notice **in the citizen's language**. The draft is stored in SQLite with
-status ``pending_review``.
-
-HARD RULE: never auto-issue. Every challan is a draft a human officer must
-approve or reject (`core.db` forces the pending status regardless).
-"""
 from __future__ import annotations
 
 import logging

@@ -1,0 +1,29 @@
+{
+  "scenario": "offpeak",
+  "fixed_time": {
+    "scenario": "offpeak",
+    "controller": "fixed_time",
+    "avg_wait_s": 19.72,
+    "avg_queue": 6.37,
+    "peak_queue": 16,
+    "num_vehicles": 1240,
+    "avg_travel_time_s": 57.53,
+    "sim_steps": 3683,
+    "num_pedestrians": 60,
+    "avg_ped_delay_s": 61.57
+  },
+  "max_pressure": {
+    "scenario": "offpeak",
+    "controller": "max_pressure",
+    "avg_wait_s": 7.6,
+    "avg_queue": 2.47,
+    "peak_queue": 15,
+    "num_vehicles": 1240,
+    "avg_travel_time_s": 44.13,
+    "sim_steps": 3667,
+    "num_pedestrians": 60,
+    "avg_ped_delay_s": 41.22
+  },
+  "wait_reduction_pct": 61.5,
+  "ped_delay_reduction_pct": 33.1
+}

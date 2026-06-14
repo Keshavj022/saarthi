@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""Draft a challan for a flagged violation (human-review queue).
-
-The violation TRIGGER here is SIMULATED and configurable — we have no footage yet.
-In production the event would come from perception (a plate read by ANPR while the
-signal was red). If a `data/outputs/perception.json` exists, the first plate read
-from your footage is used; otherwise a sample plate is used. Either way the event
-is clearly labelled, and nothing is auto-issued: the challan lands in SQLite with
-status `pending_review` for an officer to approve or reject.
-
-Usage:
-    python scripts/run_enforcement.py [--plate MH12AB1234] [--type red_light_jump] [--lang Hindi]
-"""
 from __future__ import annotations
 
 import argparse

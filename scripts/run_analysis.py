@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Run the root-cause analysis end-to-end and print the verdict.
-
-Pipeline:  SUMO run (fixed-time)  ->  computed features  ->  supervisor/Analyst
-(Claude)  ->  structured root-cause verdict.
-
-Usage:
-    python scripts/run_analysis.py [scenario]      # default scenario: rush
-
-Requires ANTHROPIC_API_KEY in .env (see .env.example).
-"""
 from __future__ import annotations
 
 import argparse
@@ -28,10 +18,7 @@ from sim.scenarios.loader import SumoNotFoundError  # noqa: E402
 
 
 def _load_benchmark(scenario: str) -> dict | None:
-    """Load the benchmark only if it was computed for THIS scenario.
 
-    Prevents the verdict from citing another scenario's wait-time reduction.
-    """
     path = settings.outputs_dir / "benchmark.json"
     if not path.exists():
         return None

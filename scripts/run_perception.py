@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Run the perception pipeline (YOLO detection + ANPR) on a clip/image.
-
-Emits structured detection events (timestamp, class, counts, plate strings) to
-stdout and data/outputs/perception.json.
-
-Usage:
-    python scripts/run_perception.py [path/to/clip.mp4]
-    # with no argument, uses the first file found in data/videos/
-
-Models (YOLO weights, EasyOCR models) auto-download on first use.
-"""
 from __future__ import annotations
 
 import json

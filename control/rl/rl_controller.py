@@ -1,10 +1,3 @@
-"""RL Tier-2 controller — a learned policy over the shared NS/EW/PED phases.
-
-At inference it is just another `PhasedController`: it reuses the same green→
-yellow→all-red→green machinery and minimum-green timing, and only its
-`select_phase` differs — it asks a trained stable-baselines3 policy which phase to
-serve, from the same observation the env was trained on.
-"""
 from __future__ import annotations
 
 import logging
@@ -34,4 +27,7 @@ class RLController(PhasedController):
             self.current,
         )
         action, _ = self.model.predict(obs, deterministic=True)
-        return ACTIONS[int(action)]
+        phase = ACTIONS[int(action)]
+        if not self.phases.phase_idx.get(phase):
+            return "NS" if self.vehicle_pressure("NS") >= self.vehicle_pressure("EW") else "EW"
+        return phase

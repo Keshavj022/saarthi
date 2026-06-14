@@ -22,6 +22,11 @@
     weekend: { ew: 500, ns: 450, ped: 480 }, offpeak: { ew: 300, ns: 120, ped: 60 },
   };
   const ANIM = { duration: 900, easing: "easeOutQuart" };
+  const CT = window.ChartTheme;
+  const barBg = (c) => (CT ? CT.barFill(c) : c);
+  const ax = (o) => (CT ? CT.axes(o) : { x: {}, y: {} });
+  // bars sweep up left→right on first paint
+  const BAR_ANIM = { ...ANIM, delay: (c) => (c.type === "data" && c.mode === "default" ? c.dataIndex * 90 : 0) };
 
   let benchChart = null, causeChart = null, temporalChart = null;
   let advisoryData = null, currentScenario = "rush", prefLang = "English", running = false;
@@ -125,7 +130,7 @@
   // "press Run" state; the live pipeline fills them as each stage completes.
   function resetPanels() {
     ["hl-wait", "hl-cause", "hl-veh", "hl-challan"].forEach((id) => { if ($(id)) $(id).textContent = "–"; });
-    ["benchmarkChart", "causeChart", "temporalChart"].forEach((id) => { const c = $(id); if (c) c.style.display = "none"; });
+    ["benchmarkChart", "causeChart", "temporalChart"].forEach((id) => { const c = $(id); if (c && c.parentElement) c.parentElement.classList.remove("on"); });
     if (benchChart) { benchChart.destroy(); benchChart = null; }
     $("bench-metrics").innerHTML = `<p class="muted">Press <b>▶ Run AI analysis</b> to measure
       the before/after wait-time reduction for this scenario.</p>`;
@@ -157,6 +162,7 @@
       resetPanels();                    // new scenario hasn't been run yet → back to ready
     });
     resetPanels();                      // immediate ready state — no "Loading…" flash
+    loadChallans();                     // surface any challans already in the DB (not just fresh runs)
     const prefs = await getJSON("/api/prefs");
     if (prefs && prefs.advisory_lang) prefLang = prefs.advisory_lang;
     buildLangSelect();
@@ -180,15 +186,15 @@
     countUp($("bm-2"), b.ped_delay_reduction_pct, { suffix: "%", decimals: 1 });
     if (b.rl) countUp($("bm-3"), b.rl_wait_reduction_pct, { suffix: "%", decimals: 1 });
     if (benchChart) benchChart.destroy();
-    const bcv = $("benchmarkChart"); bcv.style.display = "block";
+    const bcv = $("benchmarkChart"); bcv.parentElement.classList.add("on");
     benchChart = new Chart(bcv, {
       type: "bar",
       data: { labels: ["Avg vehicle wait (s)", "Avg pedestrian delay (s)"],
-        datasets: keys.map((k) => ({ label: LABELS[k], backgroundColor: COL[k], borderRadius: 6, data: [b[k].avg_wait_s, b[k].avg_ped_delay_s] })) },
-      options: { responsive: true, animation: ANIM, aspectRatio: 4.5, scales: {
-        x: { ticks: { color: "#e6edf6" }, grid: { display: false } },
-        y: { ticks: { color: "#8b98ad" }, grid: { color: "#1b2536" }, title: { display: true, text: "seconds (lower is better)", color: "#8b98ad" } } },
-        plugins: { legend: { labels: { color: "#e6edf6" } } } },
+        datasets: keys.map((k) => ({ label: LABELS[k], backgroundColor: barBg(COL[k]),
+          hoverBackgroundColor: COL[k], maxBarThickness: 64, data: [b[k].avg_wait_s, b[k].avg_ped_delay_s] })) },
+      options: { responsive: true, maintainAspectRatio: false, animation: BAR_ANIM,
+        scales: ax({ x: { grid: { display: false }, ticks: { color: "#e6edf6", font: { weight: "600" } } },
+          y: { title: { display: true, text: "seconds — lower is better", color: "#8b98ad" } } }) },
     });
   }
 
@@ -217,13 +223,18 @@
       Live.compareWithPreset(Object.fromEntries(
         Object.entries(PRESETS[currentScenario] || PRESETS.rush)));
     if (causeChart) causeChart.destroy();
-    const ccv = $("causeChart"); ccv.style.display = "block";
+    const ccv = $("causeChart"); ccv.parentElement.classList.add("on");
     causeChart = new Chart(ccv, {
       type: "doughnut",
       data: { labels: ["Vehicles", "Pedestrians", "Parking"],
-        datasets: [{ data: [cb.vehicles, cb.pedestrians, cb.parking], backgroundColor: ["#38bdf8", "#c084fc", "#fbbf24"], borderColor: "#0a0e17", borderWidth: 3 }] },
-      options: { responsive: true, animation: { animateRotate: true, duration: 1100, easing: "easeOutQuart" },
-        plugins: { legend: { position: "bottom", labels: { color: "#e6edf6" } } } },
+        datasets: [{ data: [cb.vehicles, cb.pedestrians, cb.parking],
+          backgroundColor: ["#38bdf8", "#c084fc", "#fbbf24"],
+          hoverBackgroundColor: ["#7dd3fc", "#d8b4fe", "#fcd34d"],
+          borderColor: "#0b1018", borderWidth: 3, hoverOffset: 10, hoverBorderColor: "#0b1018" }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "60%",
+        animation: { animateRotate: true, animateScale: true, duration: 1100, easing: "easeOutQuart" },
+        plugins: { legend: { position: "bottom", labels: { color: "#e6edf6" } },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed}%` } } } },
     });
   }
 
@@ -286,18 +297,16 @@
     panel.classList.remove("hidden");
     const entries = Object.entries(t.scenarios);
     if (temporalChart) temporalChart.destroy();
-    const tcv = $("temporalChart"); tcv.style.display = "block";
+    const tcv = $("temporalChart"); tcv.parentElement.classList.add("on");
     temporalChart = new Chart(tcv, {
       type: "bar",
       data: { labels: entries.map(([, v]) => v.time_context),
         datasets: [
-          { label: "avg vehicle wait (s)", backgroundColor: "#38bdf8", borderRadius: 5, data: entries.map(([, v]) => v.avg_vehicle_wait_s) },
-          { label: "avg queue (veh)", backgroundColor: "#c084fc", borderRadius: 5, data: entries.map(([, v]) => v.avg_total_queue_veh) },
+          { label: "avg vehicle wait (s)", backgroundColor: barBg("#38bdf8"), hoverBackgroundColor: "#38bdf8", data: entries.map(([, v]) => v.avg_vehicle_wait_s) },
+          { label: "avg queue (veh)", backgroundColor: barBg("#c084fc"), hoverBackgroundColor: "#c084fc", data: entries.map(([, v]) => v.avg_total_queue_veh) },
         ] },
-      options: { responsive: true, animation: ANIM, aspectRatio: 5.5, scales: {
-        x: { ticks: { color: "#e6edf6", font: { size: 10 } }, grid: { display: false } },
-        y: { ticks: { color: "#8b98ad" }, grid: { color: "#1b2536" } } },
-        plugins: { legend: { labels: { color: "#e6edf6" } } } },
+      options: { responsive: true, maintainAspectRatio: false, animation: BAR_ANIM,
+        scales: ax({ x: { grid: { display: false }, ticks: { color: "#e6edf6", font: { size: 10, weight: "600" } } } }) },
     });
   }
 
@@ -376,7 +385,8 @@
   function renderChallans(challans, fresh) {
     const list = $("challan-list");
     const pending = challans.filter((c) => c.status === "pending_review").length;
-    $("pending-badge").textContent = `${pending} pending`;
+    if ($("pending-badge")) $("pending-badge").textContent = `${pending} pending`;
+    if ($("challans-count")) $("challans-count").textContent = `${pending} pending`;
     if ($("hl-challan")) $("hl-challan").textContent = pending;
     if (!challans.length) {
       list.innerHTML = `<p class="muted">No violations flagged yet. Press <b>▶ Run AI analysis</b> above —

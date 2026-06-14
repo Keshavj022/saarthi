@@ -1,16 +1,3 @@
-"""FastAPI backend for the Saarthi web app.
-
-Serves the single-page frontend (backend/static) and provides:
-  * REST — benchmark, verdict, advisory (+ render in any language), deep-dive
-           details, temporal, perception, challan queue (+ approve/reject),
-           network catalogue, user prefs, health: all from real pipeline outputs.
-  * WS /api/ws/simulate   — one parameterized SUMO run (network, controller,
-           demand, traffic mix); streams per-vehicle frames for the canvas.
-  * WS /api/ws/experiment — batch comparison matrix (controllers × networks) with
-           progress events; returns final metrics + queue timelines per combo.
-
-Run:  uvicorn backend.app:app  (or: python scripts/run_app.py)
-"""
 from __future__ import annotations
 
 import asyncio
@@ -22,13 +9,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect  # noqa: E402
-from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 
-from config.settings import settings  # noqa: E402
-from dashboard import data  # noqa: E402 (reuse the real-output loaders)
-from sim.live import LiveConfig, LiveSim, run_combo  # noqa: E402
-from sim.network_defs import NETWORKS, descriptor  # noqa: E402
+from config.settings import settings
+from dashboard import data
+from sim.live import LiveConfig, LiveSim, run_combo
+from sim.network_defs import NETWORKS, descriptor
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +35,6 @@ def _clamp(v, lo, hi, default):
         return default
 
 
-# ------------------------------- REST API -------------------------------
 PREFS_PATH = settings.outputs_dir / "prefs.json"
 
 
@@ -187,7 +173,7 @@ async def api_details_generate(scenario: str):
         try:
             report = await asyncio.to_thread(
                 build_detailed_report, scenario,
-                data.load_benchmark(), data.load_verdict(scenario))
+                data.load_benchmark(scenario), data.load_verdict(scenario))
         except (LLMNotConfigured, LLMError) as exc:
             return {"ok": False, "error": str(exc)[:200]}
         path = settings.outputs_dir / f"details.{scenario}.json"
@@ -209,8 +195,8 @@ def api_networks():
 
 
 @app.get("/api/benchmark")
-def api_benchmark():
-    return data.load_benchmark() or {}
+def api_benchmark(scenario: str | None = None):
+    return data.load_benchmark(scenario) or {}
 
 
 @app.get("/api/verdict/{scenario}")
@@ -261,8 +247,6 @@ def _parse_cfg(params: dict) -> LiveConfig:
         duration=_clamp(params.get("duration"), 60, 1800, 480),
     )
 
-
-# --------------------------- live simulation WS ---------------------------
 @app.websocket("/api/ws/simulate")
 async def ws_simulate(ws: WebSocket):
     await ws.accept()
@@ -320,8 +304,6 @@ async def ws_simulate(ws: WebSocket):
         except Exception:
             pass
 
-
-# --------------------------- experiments WS ---------------------------
 @app.websocket("/api/ws/experiment")
 async def ws_experiment(ws: WebSocket):
     await ws.accept()
@@ -386,11 +368,8 @@ async def ws_experiment(ws: WebSocket):
         except Exception:
             pass
 
-
-# --------------------- live analysis pipeline (router) ---------------------
-from backend.analysis_ws import router as analysis_router  # noqa: E402
+from backend.analysis_ws import router as analysis_router
 
 app.include_router(analysis_router)
 
-# ----------------------- static SPA (mounted last) -----------------------
 app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")

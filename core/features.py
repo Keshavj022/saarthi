@@ -1,17 +1,3 @@
-"""Computed diagnostic features for the Analyst.
-
-Runs a scenario (default: under the fixed-time baseline — the status quo we want
-to *explain*) and distils the simulation into a clean, JSON-able feature dict:
-per-approach queues, directional imbalance, a temporal profile (peak window +
-trend), and pedestrian features including how vehicle backup correlates with the
-pedestrian phase.
-
-These COMPUTED features are what make the LLM's attribution credible — the model
-reasons over numbers, it does not guess from raw logs.
-
-Pure aggregation helpers (`series_stats`, `bucketize`, `trend`) are kept
-side-effect-free for unit testing without SUMO.
-"""
 from __future__ import annotations
 
 import json

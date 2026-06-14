@@ -1,20 +1,5 @@
-# Saarthi — Python dependencies (Python 3.11+)
-#
-# IMPORTANT: SUMO itself is a SYSTEM install, NOT a pip package. It provides the
-# `traci` and `sumolib` Python modules under $SUMO_HOME/tools. See README and
-# .env.example for installation + SUMO_HOME setup.
-#
-# Dependencies are grouped by phase. Uncomment a section when you reach that
-# phase so early installs stay light (perception/RL pull in heavy ML libs).
-
-# ---- SUMO simulator ----
-# Prebuilt SUMO (binaries + traci/sumolib + tools) via the official wheel — no
-# system build needed. The code auto-discovers SUMO_HOME from this package, so
-# no shell setup is required. If you instead have a SYSTEM SUMO install, export
-# SUMO_HOME and it takes precedence over this wheel.
 eclipse-sumo>=1.27
 
-# ---- Core (Phases 0–1): config, data, plotting, validation ----
 pydantic>=2.7
 pydantic-settings>=2.3
 python-dotenv>=1.0
@@ -22,29 +7,20 @@ numpy>=1.26
 pandas>=2.2
 matplotlib>=3.8
 
-# ---- Tests ----
 pytest>=8.0
 
-# ---- Reasoning layer (Phase 2+): LangGraph + Anthropic Claude ----
 langgraph>=0.2.0
 langchain-core>=0.3.0
 langchain-anthropic>=0.3.0
 
-# ---- Perception (Phase 3): off-the-shelf YOLO + OCR. Heavy (pulls in torch) ----
 ultralytics>=8.2.0
 easyocr>=1.7.0
 opencv-python-headless>=4.9.0
 
-# ---- Dashboard (Phase 5) ----
 streamlit>=1.36.0
 
-# ---- Web app (custom frontend: FastAPI backend + canvas SPA) ----
 fastapi>=0.110
 uvicorn[standard]>=0.29
 
-# ---- RL Tier-2 (Phase 6, optional) ----
-# A custom Gymnasium env (control/rl/env.py) is used INSTEAD of sumo-rl so the RL
-# agent shares the exact NS/EW/PED phase model as the other controllers (a fair,
-# consistent benchmark). sumo-rl is therefore not required.
 stable-baselines3>=2.3.0
 gymnasium>=0.29.0

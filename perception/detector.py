@@ -1,12 +1,3 @@
-"""YOLO vehicle + pedestrian detection (and tracking) — the perception 'tool'.
-
-Deliberately shallow per the project thesis: perception is an off-the-shelf tool
-the system calls, not the differentiator. This wraps ultralytics YOLO to report
-per-frame counts, peak/average load, and unique-object counts via tracking.
-
-Models (`yolov8n.pt`, tracker config) are auto-downloaded by ultralytics on first
-use. `traci`/SUMO are unrelated here — this operates on video/image files.
-"""
 from __future__ import annotations
 
 import logging

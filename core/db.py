@@ -1,9 +1,3 @@
-"""SQLite store for enforcement challans (stdlib sqlite3).
-
-Challans are ALWAYS created with status ``pending_review`` — Saarthi never
-auto-issues a citation. A human officer approves or rejects each one. The DB
-lives at `settings.db_path` (gitignored); tests pass a temporary path.
-"""
 from __future__ import annotations
 
 import logging

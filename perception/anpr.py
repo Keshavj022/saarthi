@@ -1,13 +1,3 @@
-"""Automatic Number-Plate Recognition (ANPR) — a POC on clear footage.
-
-Off-the-shelf and deliberately shallow: read text with EasyOCR and keep the
-strings that look like number plates. Accuracy is honestly limited to clear,
-reasonably frontal, well-lit plates — this is a proof-of-concept, not a
-production ANPR system. EasyOCR auto-downloads its models on first use.
-
-For best results, OCR is run on vehicle crops (smaller regions read better) when
-the caller provides bounding boxes; otherwise it runs on the whole frame.
-"""
 from __future__ import annotations
 
 import logging
@@ -17,7 +7,7 @@ from typing import Optional
 
 log = logging.getLogger(__name__)
 
-# Indian plate canonical format, e.g. MH12AB1234 / DL8CAF1234 (spaces removed):
+# Indian plate canonical format, e.g. MH12AB1234 / DL8CAF1234:
 #   2 letters (state) + 1-2 digits (RTO) + 1-3 letters (series) + 4 digits.
 INDIAN_PLATE_RE = re.compile(r"^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{4}$")
 
